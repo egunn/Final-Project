@@ -3,6 +3,16 @@ var margin = {t:50,r:100,b:50,l:50};
 var width = document.getElementById('plot').clientWidth - margin.r - margin.l,
     height = document.getElementById('plot').clientHeight - margin.t - margin.b;
 
+
+//Scales - create color scale based on activity classification
+//var scaleColor = d3.scale.ordinal().domain([1,2,3,4]).range(['blue','orange','green','red']); //ordinal scale does 1:1 lookup
+//need same # of items in domain and range for an ordinal scale
+var scaleColor = d3.scale.category20b(); //for now, use pre-made color category generator
+//gradient from blue to red linear().domain([1,4]).range(['blue','red']);
+var scaleX = d3.scale.linear().domain([0,150]).range([0,width]),
+    scaleY = d3.scale.linear().domain([0,100]).range([height, 0]);
+
+
 //draw plot, create svg canvas, translate as necessary
 var plot = d3.select('#plot')
     .append('svg')
@@ -15,21 +25,18 @@ var plot = d3.select('#plot')
 //Initialize axes (https://github.com/mbostock/d3/wiki/SVG-Axes)
 var axisX = d3.svg.axis()
     .orient('bottom')
+    .scale(scaleX)
+    .tickFormat( d3.format('d'))
     .tickSize(-height)
-    .tickValues([10000,50000,100000]);
+    .tickValues([50,100,150]);
 var axisY = d3.svg.axis()
     .orient('left')
+    .scale(scaleY)
     .tickSize(-width)
     .tickValues([0,25,50,75,100]);
 
 //Set up d3.map to store a map of commute times for a given city
 var commuteTime = d3.map();
-
-//Scales - create color scale based on activity classification
-//var scaleColor = d3.scale.ordinal().domain([1,2,3,4]).range(['blue','orange','green','red']); //ordinal scale does 1:1 lookup
-//need same # of items in domain and range for an ordinal scale
-var scaleColor = d3.scale.category20b(); //for now, use pre-made color category generator
-//gradient from blue to red linear().domain([1,4]).range(['blue','red']);
 
 queue()
     .defer(d3.json, "data/acs2013_5yr_B08303_14000US25025090600.geojson")
@@ -84,7 +91,12 @@ function lineChart(csvData){
         csvData[189].time20to24, csvData[189].time25to29, csvData[189].time30to34, csvData[189].time35to39, csvData[189].time40to44,
         csvData[189].time45to49,csvData[189].time60to89,csvData[189].timeover90];
 
-
+    //Draw axes
+    plot.append('g').attr('class','axis axis-x')
+        .attr('transform','translate(0,'+height+')')
+        .call(axisX);
+    plot.append('g').attr('class','axis axis-y')
+        .call(axisY);
 }
 
 function pieChart(csvData) {
@@ -255,6 +267,8 @@ function parse(csvData){
     //Link the commuteTime values to a geoID to create a lookup table for accessing the geoJSON data. Also save name stored in csv.
     commuteTime.set(csvData.geoid, {time:+csvData.time30to34, name: csvData.name});
 
+    console.log(commuteTime);
+    
     //send this data back to the await function
     return(csvData);
 

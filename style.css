@@ -40,8 +40,8 @@ p{
 .axis{
     fill:none;
     stroke:rgb(80,80,80);
-    stroke-width:1px;
-    stroke-dasharray:3px 3px;
+    stroke-width:.5px;
+    //stroke-dasharray:3px 3px;
 }
 
 svg text{
