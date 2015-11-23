@@ -40,14 +40,17 @@ var commuteTime = d3.map();
 
 queue()
     .defer(d3.json, "data/acs2013_5yr_B08303_14000US25025090600.geojson")
+    .defer(d3.json, "data/all_city_plusmetro_commute_times_acs2013_5yr_B08134_16000US3658442_formatted.json")
     .defer(d3.csv, "data/bosMetrobyCity_acs2013_5yr_B08303_14000US25025090600_csv.csv", parse)
     //.defer(d3.csv, "data/commute_14Age.csv", parse)
     //await saves the output of file 1 and file 2, in the order run (bostonMap should be geoJSON, csvData should be parsed csv.
-    .await( function(err, bostonMap, csvData){
+    .await( function(err, bostonMap, cityData, csvData){
         //console.log(commuteTime);
 
         //returns the contents of the "total" column in the Excel sheet, but only for one object at a time.
         //console.log(bostonMap.features[0].properties['B08303001 - Total:']);
+
+        console.log(cityData);
 
         //csvData is an array of 312 objects, each with geoid, name, and time values for each commute length interval in the dataset.
         //The data from individual objects can be accessed using:
@@ -267,7 +270,7 @@ function parse(csvData){
     //Link the commuteTime values to a geoID to create a lookup table for accessing the geoJSON data. Also save name stored in csv.
     commuteTime.set(csvData.geoid, {time:+csvData.time30to34, name: csvData.name});
 
-    console.log(commuteTime);
+    //console.log(commuteTime);
     
     //send this data back to the await function
     return(csvData);
