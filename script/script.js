@@ -8,6 +8,7 @@ var width = document.getElementById('plot').clientWidth - margin.r - margin.l,
 //var scaleColor = d3.scale.ordinal().domain([1,2,3,4]).range(['blue','orange','green','red']); //ordinal scale does 1:1 lookup
 //need same # of items in domain and range for an ordinal scale
 var scaleColor = d3.scale.category20b(); //for now, use pre-made color category generator
+var scaleGradientColor = d3.scale.linear().domain([0,610000]).range(['white','red']);
 //gradient from blue to red linear().domain([1,4]).range(['blue','red']);
 var scaleX = d3.scale.linear().domain([0,150]).range([0,width]),
     scaleY = d3.scale.linear().domain([0,100]).range([height, 0]);
@@ -51,6 +52,137 @@ queue()
         //console.log(bostonMap.features[0].properties['B08303001 - Total:']);
 
         console.log(cityData);
+
+        ///////////////////////plot countryCircles
+
+        console.log(cityData.data[0].population); //have to use index to access subarray values - need a forEach to cycle through?
+
+        var circles = plot.selectAll('.country')
+            .data(function(d) {return [cityData.data[0].population]}) //cannot bind to a number - needs to be an array!
+            .enter()
+            .append('g')
+            .attr('class','circle-graph');
+
+         var testCircle = circles.append('circle')
+            .attr('cx',width/2)
+            .attr('cy', height/2)
+            .attr('r', 50)
+            .style('fill','blue');
+
+        plot.append('line')
+            .attr('x1',width/2-60)
+            .attr('y1',height/2)
+            .attr('x2',width/2+60)
+            .attr('y2',height/2)
+            .style('stroke','gray')
+            .style('stroke-weight','2px');
+
+        /*testCircle.transition()
+            .delay(500)
+            .attr('r',0);*/
+
+        var whiteRect1 = plot.append('rect')
+            .attr('x',width/2-51)
+            .attr('y',height/2+50)
+            .attr('width',102)
+            .attr('height',0)
+            .style('fill','white');
+
+        var whiteRect2 = plot.append('rect')
+            .attr('x',width/2-51)
+            .attr('y',height/2-50)
+            .attr('width',102)
+            .attr('height',0)
+            .style('fill','white');
+
+        whiteRect1.transition().delay(1000).duration(500)
+            .attr('y',height/2)
+            .attr('height',50)
+            .style('fill','white');
+
+        whiteRect2.transition().delay(1000).duration(500)
+            .attr('y',height/2-50)
+            .attr('height',50)
+            .style('fill','white');
+
+        plot.append('line')
+            .attr('x1',width/2-60)
+            .attr('y1',height/2)
+            .attr('x2',width/2+60)
+            .attr('y2',height/2)
+            .style('stroke','gray')
+            .style('stroke-weight','2px');
+
+        var gradientTestArray = [405710,470228,476524,490854,198966,512784,269934,346700,613926];
+
+//**********************figure out how to turn gradient, set offset values to fixed time steps: http://tutorials.jenkov.com/svg/svg-gradients.html
+// also, look into nesting gradient inside a <def> - can these still be updated on the fly?
+        // from http://stackoverflow.com/questions/22138897/d3-js-getting-gradients-on-a-bar-chart
+        var gradient = plot.append("svg:defs")
+            .append("svg:linearGradient")
+            .attr("id", "gradient")
+            .attr("x1", "0%")
+            .attr("y1", "0%")
+            .attr("x2", "100%")
+            .attr("y2", "100%")
+            .attr("spreadMethod", "pad");
+
+        gradient.append("svg:stop")
+            .attr("offset", "0%")
+            .attr("stop-color", scaleGradientColor(gradientTestArray[0]))
+            .attr("stop-opacity", 1);
+
+        gradient.append("svg:stop")
+            .attr("offset", "5%")
+            .attr("stop-color", scaleGradientColor(gradientTestArray[2]))
+            .attr("stop-opacity", 1);
+
+        gradient.append("svg:stop")
+            .attr("offset", "10%")
+            .attr("stop-color", scaleGradientColor(gradientTestArray[3]))
+            .attr("stop-opacity", 1);
+
+        gradient.append("svg:stop")
+            .attr("offset", "15%")
+            .attr("stop-color", scaleGradientColor(gradientTestArray[4]))
+            .attr("stop-opacity", 1);
+
+        gradient.append("svg:stop")
+            .attr("offset", "20%")
+            .attr("stop-color", scaleGradientColor(gradientTestArray[5]))
+            .attr("stop-opacity", 1);
+
+        gradient.append("svg:stop")
+            .attr("offset", "30%")
+            .attr("stop-color", scaleGradientColor(gradientTestArray[6]))
+            .attr("stop-opacity", 1);
+
+        gradient.append("svg:stop")
+            .attr("offset", "40%")
+            .attr("stop-color", scaleGradientColor(gradientTestArray[7]))
+            .attr("stop-opacity", 1);
+
+        gradient.append("svg:stop")
+            .attr("offset", "55%")
+            .attr("stop-color", scaleGradientColor(gradientTestArray[8]))
+            .attr("stop-opacity", 1);
+
+        var testRect = plot.append('rect')
+            .attr('x',width/2-25)
+            .attr('y',height/2)
+            .attr('width',50)
+            .attr('height',0)
+            .style('fill','url(#gradient)');
+
+        testRect.transition().delay(1800)
+            .duration(1000)
+            .attr('x',width/2-25)
+            .attr('y',height/2-350/2)
+            .attr('width',50)
+            .attr('height',350);
+
+
+            ///////////////////////
 
         //csvData is an array of 312 objects, each with geoid, name, and time values for each commute length interval in the dataset.
         //The data from individual objects can be accessed using:
@@ -100,6 +232,10 @@ function lineChart(csvData){
         .call(axisX);
     plot.append('g').attr('class','axis axis-y')
         .call(axisY);
+}
+
+function countryCircles(cityData) {
+    //develop code in queue function, move here later
 }
 
 function pieChart(csvData) {
