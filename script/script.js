@@ -8,7 +8,7 @@ var width = document.getElementById('plot').clientWidth - margin.r - margin.l,
 //var scaleColor = d3.scale.ordinal().domain([1,2,3,4]).range(['blue','orange','green','red']); //ordinal scale does 1:1 lookup
 //need same # of items in domain and range for an ordinal scale
 var scaleColor = d3.scale.category20b(); //for now, use pre-made color category generator
-var scaleGradientColor = d3.scale.linear().domain([0,610000]).range(['white','red']);
+var scaleGradientColor = d3.scale.linear().domain([0,610000]).range(['white','green']);
 //gradient from blue to red linear().domain([1,4]).range(['blue','red']);
 var scaleX = d3.scale.linear().domain([0,150]).range([0,width]),
     scaleY = d3.scale.linear().domain([0,100]).range([height, 0]);
@@ -53,9 +53,9 @@ queue()
 
         console.log(cityData);
 
-        ///////////////////////plot countryCircles
+        ///////////////////////development area
 
-        console.log(cityData.data[0].population); //have to use index to access subarray values - need a forEach to cycle through?
+        //console.log(cityData.data[0].population); //have to use index to access subarray values - need a forEach to cycle through?
 
         var circles = plot.selectAll('.country')
             .data(function(d) {return [cityData.data[0].population]}) //cannot bind to a number - needs to be an array!
@@ -63,7 +63,7 @@ queue()
             .append('g')
             .attr('class','circle-graph');
 
-         var testCircle = circles.append('circle')
+        var testCircle = circles.append('circle')
             .attr('cx',width/2)
             .attr('cy', height/2)
             .attr('r', 50)
@@ -77,110 +77,120 @@ queue()
             .style('stroke','gray')
             .style('stroke-weight','2px');
 
-        /*testCircle.transition()
-            .delay(500)
-            .attr('r',0);*/
 
-        var whiteRect1 = plot.append('rect')
-            .attr('x',width/2-51)
-            .attr('y',height/2+50)
-            .attr('width',102)
-            .attr('height',0)
-            .style('fill','white');
+        var totalCommuters = [];
+        cityData.data.forEach(function(d,i){
+            var tempData = cityData.data[i].transitTypes.totalCommute;
+            totalCommuters.push(tempData);
+        });
 
-        var whiteRect2 = plot.append('rect')
-            .attr('x',width/2-51)
-            .attr('y',height/2-50)
-            .attr('width',102)
-            .attr('height',0)
-            .style('fill','white');
+        //console.log(cityData['data'][0].transitTypes['totalCommute']);
 
-        whiteRect1.transition().delay(1000).duration(500)
-            .attr('y',height/2)
-            .attr('height',50)
-            .style('fill','white');
+        //cityData.data[0].transitTypes.totalCommute.totalCount works - single #
+        //cityData[data].transitTypes.totalCommute.totalCount - data is undefined
+        //cityData['data'].transitTypes.totalCommute.totalCount - returns an array of objects for which totalCommute is undefined
+        // Array contains all 19 objects stored in cityData.data, but can't access properties of objects directly   .
+        //cityData['data'][0] gives contents of 0th element of cityData.data. Can access all subarrays using .geoid, etc.,
+        //but can't get subarray elements for all objects in the array at once; need to use forEach loop to collect by iterating.
+        //[cityData['data']].geoid - returns undefined
+        //[cityData['data']] returns an array with a single 19-element array inside it - not helpful
 
-        whiteRect2.transition().delay(1000).duration(500)
-            .attr('y',height/2-50)
-            .attr('height',50)
-            .style('fill','white');
 
-        plot.append('line')
-            .attr('x1',width/2-60)
-            .attr('y1',height/2)
-            .attr('x2',width/2+60)
-            .attr('y2',height/2)
-            .style('stroke','gray')
-            .style('stroke-weight','2px');
+        /*var testKey = d3.nest()
+            .key(function(d) { return d.name; })
+            .entries(cityData.data);
+        console.log(testKey);*/
 
-        var gradientTestArray = [405710,470228,476524,490854,198966,512784,269934,346700,613926];
+       // var timeRanges = [0, 10,15,20,25,30,35,45,60]; //use beginning of each time interval to set circle y position]
 
-//**********************figure out how to turn gradient, set offset values to fixed time steps: http://tutorials.jenkov.com/svg/svg-gradients.html
-// also, look into nesting gradient inside a <def> - can these still be updated on the fly?
-        // from http://stackoverflow.com/questions/22138897/d3-js-getting-gradients-on-a-bar-chart
-        var gradient = plot.append("svg:defs")
-            .append("svg:linearGradient")
-            .attr("id", "gradient")
-            .attr("x1", "0%")
-            .attr("y1", "0%")
-            .attr("x2", "100%")
-            .attr("y2", "100%")
-            .attr("spreadMethod", "pad");
+        //Plot city circles based on population size
+        var cities = plot.selectAll('.cities')
+            .data(cityData.data)
+            .enter()
+            .append('g')
+            .attr('class', 'city');
 
-        gradient.append("svg:stop")
-            .attr("offset", "0%")
-            .attr("stop-color", scaleGradientColor(gradientTestArray[0]))
-            .attr("stop-opacity", 1);
+        /*plot.selectAll('.city')
+            .append('circle')
+            .attr('cx', function(d,i){return 100*i*Math.random()})
+            .attr('cy', function(d,i){return 100*i*Math.random()})
+            .attr('r', 5)
+            .style('fill', 'green');*/
 
-        gradient.append("svg:stop")
-            .attr("offset", "5%")
-            .attr("stop-color", scaleGradientColor(gradientTestArray[2]))
-            .attr("stop-opacity", 1);
+        //***********Tried to append circles based on contents of totalCommute array - doesn't work!!
+        //Using numerical indices also did not work. Prints totalCommute value for each array to log, but doesn't
+        // append anything to DOM. TotalCommute array is an object that contains 9 elements - should append 9 groups?
+        //using the individual object values (totalCommute.time10tp14) does not help - doesn't appear to be a problem
+        // with values/array format
+        /*citySelect = cities.selectAll('.city')
+            .data(function(d,i){
+                console.log(cityData.data[i].transitTypes.totalCommute);
+                return cityData.data[i].transitTypes.totalCommute;
+            })
+            .enter()
+            .append('g')
+            .attr('class', 'commuteBubbles');*/
 
-        gradient.append("svg:stop")
-            .attr("offset", "10%")
-            .attr("stop-color", scaleGradientColor(gradientTestArray[3]))
-            .attr("stop-opacity", 1);
+        //But it works this way, so it's the data bind that doesn't work.
+        /*citySelect = cities.selectAll('.city')
+            .data(totalCommuters)
+            .enter()
+            .append('circle')
+            .attr('cx', function(d,i){return 100*i*Math.random()})
+            .attr('cy', function(d,i){return 100*i*Math.random()})
+            .attr('r', 5)
+            .style('fill', 'red')
+            .attr('class', 'commuteBubbles');*/
 
-        gradient.append("svg:stop")
-            .attr("offset", "15%")
-            .attr("stop-color", scaleGradientColor(gradientTestArray[4]))
-            .attr("stop-opacity", 1);
+        //create a key to hold a new variable that might bind
+        var testKey = d3.nest()
+            .key(function(d){return cityData.data[0].transitTypes.totalCommute})
+            .entries(cityData.data);
+            console.log(testKey[0].values[0].transitTypes.totalCommute);
 
-        gradient.append("svg:stop")
-            .attr("offset", "20%")
-            .attr("stop-color", scaleGradientColor(gradientTestArray[5]))
-            .attr("stop-opacity", 1);
+        //This works, but appends only one circle (because testKey has dim 1?)
+        /*citySelect = cities.selectAll('.city')
+            .data(function(d){return testKey})
+            .enter()
+            .append('circle')
+            .attr('cx', function(d,i){return 100*i*Math.random()})
+            .attr('cy', function(d,i){return 100*i*Math.random()})
+            .attr('r', 5)
+            .style('fill', 'red')
+            .attr('class', 'commuteBubbles'); */
 
-        gradient.append("svg:stop")
-            .attr("offset", "30%")
-            .attr("stop-color", scaleGradientColor(gradientTestArray[6]))
-            .attr("stop-opacity", 1);
+        //This doesn't return anything
+        citySelect = cities.selectAll('.city')
+            .data(function(d){return testKey[0].values[0].transitTypes.totalCommute})
+            .enter()
+            .append('circle')
+            .attr('cx', function(d,i){return 100*i*Math.random()})
+            .attr('cy', function(d,i){return 100*i*Math.random()})
+            .attr('r', 5)
+            .style('fill', 'red')
+            .attr('class', 'commuteBubbles');
 
-        gradient.append("svg:stop")
-            .attr("offset", "40%")
-            .attr("stop-color", scaleGradientColor(gradientTestArray[7]))
-            .attr("stop-opacity", 1);
+        //append population bubbles at average commute time
+        //**********************sort out metro and city pops! Check y axis - reversed?
+        cities.append('circle')
+            .attr('cx', function(d,i){return i*width/19+width/19})
+            .attr('cy', function(d,i){return scaleX(cityData.data[i].transitTypes.totalCommute.overallAverageTime)})
+            .attr('r', function(d,i){return (cityData.data[i].population)/500000})
+            .style('fill', 'green');
 
-        gradient.append("svg:stop")
-            .attr("offset", "55%")
-            .attr("stop-color", scaleGradientColor(gradientTestArray[8]))
-            .attr("stop-opacity", 1);
 
-        var testRect = plot.append('rect')
-            .attr('x',width/2-25)
-            .attr('y',height/2)
-            .attr('width',50)
-            .attr('height',0)
-            .style('fill','url(#gradient)');
+        /*plot.selectAll('city')
+            .data(function(d,i){
+                console.log(cityData.data[i].transitTypes.totalCommute);
+                    return cityData.data[i].transitTypes.totalCommute;
+            })
+            .enter()
+            .append('circle')
+            .attr('cx', width/2)  //in final version, change this to be the calculated position of the city
+            .attr('cy', function(d,i){return 10*i})
+            .attr('r',5);*/
 
-        testRect.transition().delay(1800)
-            .duration(1000)
-            .attr('x',width/2-25)
-            .attr('y',height/2-350/2)
-            .attr('width',50)
-            .attr('height',350);
-
+        //console.log(cityData["data"]);
 
             ///////////////////////
 
@@ -205,6 +215,9 @@ queue()
                 lineChart(csvData);
             }
 
+            else if (mode == 'btn-4'){
+                populationBars(cityData);
+            }
             else {
                 console.log('broken');
             }
@@ -218,6 +231,160 @@ function dataLoaded(err,geoData,pieData){
     console.log('do you hear me??');
 
 }
+
+
+function populationBars(cityData){
+
+    console.log(cityData.data[0].population); //have to use index to access subarray values - need a forEach to cycle through?
+
+    var circles = plot.selectAll('.country')
+        .data(function(d) {return [cityData.data[0].population]}) //cannot bind to a number - needs to be an array!
+        .enter()
+        .append('g')
+        .attr('class','circle-graph');
+
+    var testCircle = circles.append('circle')
+        .attr('cx',width/2)
+        .attr('cy', height/2)
+        .attr('r', 50)
+        .style('fill','blue');
+
+    plot.append('line')
+        .attr('x1',width/2-60)
+        .attr('y1',height/2)
+        .attr('x2',width/2+60)
+        .attr('y2',height/2)
+        .style('stroke','gray')
+        .style('stroke-weight','2px');
+
+    /*testCircle.transition()
+     .delay(500)
+     .attr('r',0);*/
+
+    var whiteRect1 = plot.append('rect')
+        .attr('x',width/2-51)
+        .attr('y',height/2+50)
+        .attr('width',102)
+        .attr('height',0)
+        .style('fill','white');
+
+    var whiteRect2 = plot.append('rect')
+        .attr('x',width/2-51)
+        .attr('y',height/2-50)
+        .attr('width',102)
+        .attr('height',0)
+        .style('fill','white');
+
+    whiteRect1.transition().delay(1000).duration(500)
+        .attr('y',height/2)
+        .attr('height',50)
+        .style('fill','white');
+
+    whiteRect2.transition().delay(1000).duration(500)
+        .attr('y',height/2-50)
+        .attr('height',50)
+        .style('fill','white');
+
+    plot.append('line')
+        .attr('x1',width/2-60)
+        .attr('y1',height/2)
+        .attr('x2',width/2+60)
+        .attr('y2',height/2)
+        .style('stroke','gray')
+        .style('stroke-weight','2px');
+
+    //compiles the commute time totals for each city/metro area in the original data array, returns a series of objects
+    //with nested commute times.
+    var gradientDataArray = [];
+    cityData.data.forEach(function(d,i){
+        var tempData = cityData.data[i].transitTypes.totalCommute;
+
+        gradientDataArray.push(tempData);
+    });
+
+    console.log(gradientDataArray);
+
+    var gradientTestArray = [405710,470228,476524,490854,198966,512784,269934,346700,613926];
+//***************need to calc based on size of time steps for final version! **************************
+    var gradientOffsets = [0,10,20,30,40,50,60,70,80,90];
+
+//**********************http://tutorials.jenkov.com/svg/svg-gradients.html
+// also, look into nesting gradient inside a <def> - can these still be updated on the fly?
+    // from http://stackoverflow.com/questions/22138897/d3-js-getting-gradients-on-a-bar-chart
+    var gradient = plot.append("svg:defs")
+        .append("svg:linearGradient")
+        .attr("id", "gradient")
+        .attr("x1", "50%")//x1,x2,y1,y2 define a line to determine gradient placement/orientation. Positions given in % of containing object.
+        .attr("y1", "100%")
+        .attr("x2", "50%")
+        .attr("y2", "0%")
+        .attr("spreadMethod", "pad");
+
+
+    gradientTestArray.forEach(function(d,i){   //switch to use gradientDataArray
+        gradient.append("svg:stop")
+            .attr("offset", gradientOffsets[i] +"%")
+            .attr("stop-color", scaleGradientColor(gradientTestArray[i]))
+            .attr("stop-opacity", 1);
+    });
+
+    /*gradient.append("svg:stop")
+     .attr("offset", "0%")
+     .attr("stop-color", scaleGradientColor(gradientTestArray[0]))
+     .attr("stop-opacity", 1);
+
+     gradient.append("svg:stop")
+     .attr("offset", "5%")
+     .attr("stop-color", scaleGradientColor(gradientTestArray[2]))
+     .attr("stop-opacity", 1);
+
+     gradient.append("svg:stop")
+     .attr("offset", "10%")
+     .attr("stop-color", scaleGradientColor(gradientTestArray[3]))
+     .attr("stop-opacity", 1);
+
+     gradient.append("svg:stop")
+     .attr("offset", "15%")
+     .attr("stop-color", scaleGradientColor(gradientTestArray[4]))
+     .attr("stop-opacity", 1);
+
+     gradient.append("svg:stop")
+     .attr("offset", "20%")
+     .attr("stop-color", scaleGradientColor(gradientTestArray[5]))
+     .attr("stop-opacity", 1);
+
+     gradient.append("svg:stop")
+     .attr("offset", "30%")
+     .attr("stop-color", scaleGradientColor(gradientTestArray[6]))
+     .attr("stop-opacity", 1);
+
+     gradient.append("svg:stop")
+     .attr("offset", "40%")
+     .attr("stop-color", scaleGradientColor(gradientTestArray[7]))
+     .attr("stop-opacity", 1);
+
+     gradient.append("svg:stop")
+     .attr("offset", "55%")
+     .attr("stop-color", scaleGradientColor(gradientTestArray[8]))
+     .attr("stop-opacity", 1);
+     */
+
+    var testRect = plot.append('rect')
+        .attr('x',width/2-25)
+        .attr('y',height/2)
+        .attr('width',50)
+        .attr('height',0)
+        .style('fill','url(#gradient)');
+
+    testRect.transition().delay(1800)
+        .duration(1000)
+        .attr('x',width/2-25)
+        .attr('y',height/2-350/2)
+        .attr('width',50)
+        .attr('height',350);
+
+}
+
 
 function lineChart(csvData){
 
