@@ -131,11 +131,11 @@ queue()
             .attr('r', 5)
             .style('fill', 'green');*/
 
-        //***********Tried to append circles based on contents of totalCommute array - doesn't work!!
+        //Tried to append circles based on contents of totalCommute array - doesn't work!!
         //Using numerical indices also did not work. Prints totalCommute value for each array to log, but doesn't
-        // append anything to DOM. TotalCommute array is an object that contains 9 elements - should append 9 groups?
+        //append anything to DOM. TotalCommute array is an object that contains 9 elements - should append 9 groups?
         //using the individual object values (totalCommute.time10tp14) does not help - doesn't appear to be a problem
-        // with values/array format
+        // with the values or array format
         /*citySelect = cities.selectAll('.city')
             .data(function(d,i){
                 console.log(cityData.data[i].transitTypes.totalCommute);
@@ -145,7 +145,7 @@ queue()
             .append('g')
             .attr('class', 'commuteBubbles');*/
 
-        //But it works this way, so it's the data bind that doesn't work.
+        //But it works this way, so maybe it's the data bind that doesn't work?
         /*citySelect = cities.selectAll('.city')
             .data(totalCommuters)
             .enter()
@@ -185,32 +185,127 @@ queue()
             .attr('class', 'commuteBubbles');
 
         //append population bubbles with y value at average commute time (mins)
-        //**********************sort out metro and city pops! Check y axis - reversed?
+//**********************sort metro and city pops, use only city in final plot! Double-check y axis - reversed?
         cities.append('circle')
             .attr('cx', function(d,i){return i*width/19+width/19})
             .attr('cy', function(d,i){return scaleY(cityData.data[i].transitTypes.totalCommute.overallAverageTime)})
             .attr('r', function(d,i){return (cityData.data[i].population)/500000})
             .style('fill', 'green');
 
-        //**************************note - value scales don't match!! Need to fix proportions in final version,
+//**************************note - value scales don't match!! Need to fix proportions in final version,
         //change to square root scaling.
 
 //**************use metadata to access totalCommute subobjects one at a time???
+        //maybe it's possible to append circles for each entry in totalCommute subarray directly to the cities selection??
         cities.forEach(function(d,i) {
 
-            //console.log(cityData.data[0].transitTypes);
+           // console.log(cityData.data[i].transitTypes.totalCommute.totalCount);
+
+           // for (var j = 0; j < 8; j++) {
+                cities.append('circle')
+                    .attr('cx', function (d, i) {
+                        return i * width / 19 + width / 19
+                    })
+                    .attr('cy', function (d, i) {
+                        return scaleY(10)
+                    })
+                    .attr('r', function (d, i) {
+                        return (cityData.data[i].transitTypes.totalCommute.time10to14) / 100000
+                    })
+                    //.attr('r', 10)
+                    .style('fill', 'red');
+            //}
 
             cities.append('circle')
                 .attr('cx', function (d, i) {
                     return i * width / 19 + width / 19
                 })
                 .attr('cy', function (d, i) {
-                    return scaleY(10)
+                    return scaleY(15)
                 })
-                //.attr('r', function (d, i) {
-                //    return (cityData.data[0].transitTypes.totalCommute[0]) / 100000
-                //})
-                .attr('r',10)
+                .attr('r', function (d, i) {
+                    return (cityData.data[i].transitTypes.totalCommute.time15to19) / 100000
+                })
+                //.attr('r', 10)
+                .style('fill', 'red');
+
+            cities.append('circle')
+                .attr('cx', function (d, i) {
+                    return i * width / 19 + width / 19
+                })
+                .attr('cy', function (d, i) {
+                    return scaleY(20)
+                })
+                .attr('r', function (d, i) {
+                    return (cityData.data[i].transitTypes.totalCommute.time20to24) / 100000
+                })
+                //.attr('r', 10)
+                .style('fill', 'red');
+
+            cities.append('circle')
+                .attr('cx', function (d, i) {
+                    return i * width / 19 + width / 19
+                })
+                .attr('cy', function (d, i) {
+                    return scaleY(25)
+                })
+                .attr('r', function (d, i) {
+                    return (cityData.data[i].transitTypes.totalCommute.time25to29) / 100000
+                })
+                //.attr('r', 10)
+                .style('fill', 'red');
+
+            cities.append('circle')
+                .attr('cx', function (d, i) {
+                    return i * width / 19 + width / 19
+                })
+                .attr('cy', function (d, i) {
+                    return scaleY(30)
+                })
+                .attr('r', function (d, i) {
+                    return (cityData.data[i].transitTypes.totalCommute.time30to34) / 100000
+                })
+                //.attr('r', 10)
+                .style('fill', 'red');
+
+
+            cities.append('circle')
+                .attr('cx', function (d, i) {
+                    return i * width / 19 + width / 19
+                })
+                .attr('cy', function (d, i) {
+                    return scaleY(35)
+                })
+                .attr('r', function (d, i) {
+                    return (cityData.data[i].transitTypes.totalCommute.time35to44) / 100000
+                })
+                //.attr('r', 10)
+                .style('fill', 'red');
+
+            cities.append('circle')
+                .attr('cx', function (d, i) {
+                    return i * width / 19 + width / 19
+                })
+                .attr('cy', function (d, i) {
+                    return scaleY(45)
+                })
+                .attr('r', function (d, i) {
+                    return (cityData.data[i].transitTypes.totalCommute.time45to59) / 100000
+                })
+                //.attr('r', 10)
+                .style('fill', 'red');
+
+            cities.append('circle')
+                .attr('cx', function (d, i) {
+                    return i * width / 19 + width / 19
+                })
+                .attr('cy', function (d, i) {
+                    return scaleY(60)
+                })
+                .attr('r', function (d, i) {
+                    return (cityData.data[i].transitTypes.totalCommute.timeOver60) / 100000
+                })
+                //.attr('r', 10)
                 .style('fill', 'red');
         });
 
