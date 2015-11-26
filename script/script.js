@@ -77,7 +77,7 @@ queue()
             .append('g')
             .attr('class','circle-graph');
 
-        var testCircle = circles.append('circle')
+        /*var testCircle = circles.append('circle')
             .attr('cx',width/2)
             .attr('cy', height/2)
             .attr('r', 50)
@@ -89,14 +89,14 @@ queue()
             .attr('x2',width/2+60)
             .attr('y2',height/2)
             .style('stroke','gray')
-            .style('stroke-weight','2px');
+            .style('stroke-weight','2px');*/
 
 
-        var totalCommuters = [];
+        /*var totalCommuters = [];
         cityData.data.forEach(function(d,i){
             var tempData = cityData.data[i].transitTypes.totalCommute;
             totalCommuters.push(tempData);
-        });
+        });*/
 
         //console.log(cityData['data'][0].transitTypes['totalCommute']);
 
@@ -185,15 +185,32 @@ queue()
             .attr('class', 'commuteBubbles');
 
         //append population bubbles with y value at average commute time (mins)
-//**********************sort metro and city pops, use only city in final plot! Double-check y axis - reversed?
+//**********************sort metro and city pops, use only city in final plot!
         cities.append('circle')
             .attr('cx', function(d,i){return i*width/19+width/19})
             .attr('cy', function(d,i){return scaleY(cityData.data[i].transitTypes.totalCommute.overallAverageTime)})
             .attr('r', function(d,i){return (cityData.data[i].population)/500000})
             .style('fill', 'green');
 
+        cities.append('line')
+            .attr('x1',function(d,i){return (i*width/19+width/19)-10-(cityData.data[i].population)/500000})
+            .attr('y1',function(d,i){return scaleY(cityData.data[i].transitTypes.totalCommute.overallAverageTime)})
+            .attr('x2',function(d,i){return (i*width/19+width/19)+10+(cityData.data[i].population)/500000})
+            .attr('y2',function(d,i){return scaleY(cityData.data[i].transitTypes.totalCommute.overallAverageTime)})
+            .style('stroke','blue')
+            .style('stroke-weight','2px');
+
+
+       cities.append('text')
+            .text(function(d,i){return cityData.data[i].name; })//retrieve city label from rows array, use as text
+            .attr('x',function (d, i) {return i * width / 19 + width / 19})
+            .attr('class', 'label')
+            .attr('text-anchor', 'middle')
+            .attr('font-size','8px')
+            .style('fill','rgb(215,215,215)');
+
 //**************************note - value scales don't match!! Need to fix proportions in final version,
-        //change to square root scaling.
+        //change to square root scaling. scaleR = d3.scale.sqrt().range([10,50]); (Wk 7 in class 3)
 
 //**************use metadata to access totalCommute subobjects one at a time???
         //maybe it's possible to append circles for each entry in totalCommute subarray directly to the cities selection??
@@ -210,7 +227,7 @@ queue()
                         return scaleY(10)
                     })
                     .attr('r', function (d, i) {
-                        return (cityData.data[i].transitTypes.totalCommute.time10to14) / 100000
+                        return (cityData.data[i].transitTypes.totalCommute.time10to14/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
                     })
                     //.attr('r', 10)
                     .style('fill', 'red');
@@ -221,10 +238,23 @@ queue()
                     return i * width / 19 + width / 19
                 })
                 .attr('cy', function (d, i) {
+                    return scaleY(0)
+                })
+                .attr('r', function (d, i) {
+                    return (cityData.data[i].transitTypes.totalCommute.timeUnder10/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
+                })
+                //.attr('r', 10)
+                .style('fill', 'red');
+
+            cities.append('circle')
+                .attr('cx', function (d, i) {
+                    return i * width / 19 + width / 19
+                })
+                .attr('cy', function (d, i) {
                     return scaleY(15)
                 })
                 .attr('r', function (d, i) {
-                    return (cityData.data[i].transitTypes.totalCommute.time15to19) / 100000
+                    return (cityData.data[i].transitTypes.totalCommute.time15to19/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
                 })
                 //.attr('r', 10)
                 .style('fill', 'red');
@@ -237,7 +267,7 @@ queue()
                     return scaleY(20)
                 })
                 .attr('r', function (d, i) {
-                    return (cityData.data[i].transitTypes.totalCommute.time20to24) / 100000
+                    return (cityData.data[i].transitTypes.totalCommute.time20to24/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
                 })
                 //.attr('r', 10)
                 .style('fill', 'red');
@@ -250,7 +280,7 @@ queue()
                     return scaleY(25)
                 })
                 .attr('r', function (d, i) {
-                    return (cityData.data[i].transitTypes.totalCommute.time25to29) / 100000
+                    return (cityData.data[i].transitTypes.totalCommute.time25to29/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
                 })
                 //.attr('r', 10)
                 .style('fill', 'red');
@@ -263,7 +293,7 @@ queue()
                     return scaleY(30)
                 })
                 .attr('r', function (d, i) {
-                    return (cityData.data[i].transitTypes.totalCommute.time30to34) / 100000
+                    return (cityData.data[i].transitTypes.totalCommute.time30to34/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
                 })
                 //.attr('r', 10)
                 .style('fill', 'red');
@@ -277,7 +307,7 @@ queue()
                     return scaleY(35)
                 })
                 .attr('r', function (d, i) {
-                    return (cityData.data[i].transitTypes.totalCommute.time35to44) / 100000
+                    return (cityData.data[i].transitTypes.totalCommute.time35to44/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
                 })
                 //.attr('r', 10)
                 .style('fill', 'red');
@@ -290,7 +320,7 @@ queue()
                     return scaleY(45)
                 })
                 .attr('r', function (d, i) {
-                    return (cityData.data[i].transitTypes.totalCommute.time45to59) / 100000
+                    return (cityData.data[i].transitTypes.totalCommute.time45to59/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
                 })
                 //.attr('r', 10)
                 .style('fill', 'red');
@@ -303,10 +333,28 @@ queue()
                     return scaleY(60)
                 })
                 .attr('r', function (d, i) {
-                    return (cityData.data[i].transitTypes.totalCommute.timeOver60) / 100000
+                    //console.log(cityData.data[i].transitTypes.totalCommute.timeOver60);  //check - different values for each i
+                    return (cityData.data[i].transitTypes.totalCommute.timeOver60/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
                 })
                 //.attr('r', 10)
                 .style('fill', 'red');
+
+//**************Check scaling on all dots on this page - currently not consistent between datasets - inaccurate comparisons
+            cities.append('circle')
+                .attr('cx', function (d, i) {
+                    return i * width / 19 + width / 19
+                })
+                .attr('cy', function (d, i) {
+                    return scaleY(75)
+                })
+                .attr('r', function (d, i) {
+                    //console.log(cityData.data[i].transitTypes.totalCommute.timeOver60);  //check - different values for each i
+                    return ((cityData.data[i].transitTypes.totalCommute.timeOver60)+cityData.data[i].transitTypes.totalCommute.time45to59+
+                        cityData.data[i].transitTypes.totalCommute.time35to44+cityData.data[i].transitTypes.totalCommute.time30to34/cityData.data[i].transitTypes.totalCommute.totalCount) /100000                })
+                //.attr('r', 10)
+                .style('fill', 'purple');
+
+
         });
 
         /*plot.selectAll('city')
