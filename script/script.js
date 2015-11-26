@@ -39,13 +39,16 @@ var axisY = d3.svg.axis()
 //Set up d3.map to store a map of commute times for a given city
 var commuteTime = d3.map();
 
+
 queue()
     .defer(d3.json, "data/acs2013_5yr_B08303_14000US25025090600.geojson")
     .defer(d3.json, "data/all_city_plusmetro_commute_times_acs2013_5yr_B08134_16000US3658442_formatted.json")
     .defer(d3.csv, "data/bosMetrobyCity_acs2013_5yr_B08303_14000US25025090600_csv.csv", parse)
+    .defer(d3.csv, "data/cityMetadata.csv", parse)
+    .defer(d3.csv, "data/timeMetadata.csv", parse)
     //.defer(d3.csv, "data/commute_14Age.csv", parse)
     //await saves the output of file 1 and file 2, in the order run (bostonMap should be geoJSON, csvData should be parsed csv.
-    .await( function(err, bostonMap, cityData, csvData){
+    .await( function(err, bostonMap, cityData, csvData, cityMetadata, timeMetadatain){
         //console.log(commuteTime);
 
         //returns the contents of the "total" column in the Excel sheet, but only for one object at a time.
@@ -53,9 +56,20 @@ queue()
 
         console.log(cityData);
 
-        ///////////////////////development area
+//****************************check metadata import - creates [object,object], but doesn't seem to be accessible...
+       //set up and populate lookup tables for time and city labels.
+        var timeMetadata = d3.map();
+        //var cityMetadata = d3.map();
+        //populate the lookup tables
+        timeMetadata.set(timeMetadatain.timeLabel, timeMetadatain.timeNumber);
+        //cityMetadata.set(cityMetadata.geoid, {label:cityMetadata.label, type:cityMetadatain.type});*/
+        console.log('timeMetadata ' +timeMetadata);
+
+        console.log('metadata ' +timeMetadata.timeLabel);
 
         //console.log(cityData.data[0].population); //have to use index to access subarray values - need a forEach to cycle through?
+
+        ///////////////////////development area
 
         var circles = plot.selectAll('.country')
             .data(function(d) {return [cityData.data[0].population]}) //cannot bind to a number - needs to be an array!
@@ -146,7 +160,7 @@ queue()
         var testKey = d3.nest()
             .key(function(d){return cityData.data[0].transitTypes.totalCommute})
             .entries(cityData.data);
-            console.log(testKey[0].values[0].transitTypes.totalCommute);
+            //console.log(testKey[0].values[0].transitTypes.totalCommute);
 
         //This works, but appends only one circle (because testKey has dim 1?)
         /*citySelect = cities.selectAll('.city')
@@ -170,14 +184,35 @@ queue()
             .style('fill', 'red')
             .attr('class', 'commuteBubbles');
 
-        //append population bubbles at average commute time
+        //append population bubbles with y value at average commute time (mins)
         //**********************sort out metro and city pops! Check y axis - reversed?
         cities.append('circle')
             .attr('cx', function(d,i){return i*width/19+width/19})
-            .attr('cy', function(d,i){return scaleX(cityData.data[i].transitTypes.totalCommute.overallAverageTime)})
+            .attr('cy', function(d,i){return scaleY(cityData.data[i].transitTypes.totalCommute.overallAverageTime)})
             .attr('r', function(d,i){return (cityData.data[i].population)/500000})
             .style('fill', 'green');
 
+        //**************************note - value scales don't match!! Need to fix proportions in final version,
+        //change to square root scaling.
+
+//**************use metadata to access totalCommute subobjects one at a time???
+        cities.forEach(function(d,i) {
+
+            //console.log(cityData.data[0].transitTypes);
+
+            cities.append('circle')
+                .attr('cx', function (d, i) {
+                    return i * width / 19 + width / 19
+                })
+                .attr('cy', function (d, i) {
+                    return scaleY(10)
+                })
+                //.attr('r', function (d, i) {
+                //    return (cityData.data[0].transitTypes.totalCommute[0]) / 100000
+                //})
+                .attr('r',10)
+                .style('fill', 'red');
+        });
 
         /*plot.selectAll('city')
             .data(function(d,i){
@@ -234,6 +269,8 @@ function dataLoaded(err,geoData,pieData){
 
 
 function populationBars(cityData){
+
+    plot.selectAll("*").remove();
 
     console.log(cityData.data[0].population); //have to use index to access subarray values - need a forEach to cycle through?
 
@@ -388,6 +425,8 @@ function populationBars(cityData){
 
 function lineChart(csvData){
 
+    plot.selectAll("*").remove();
+
     //for now, choose data on commute times for Boston as the test dataset (same as used for pie chart)
     lineData = [csvData[189].timeunder5, csvData[189].time5to9, csvData[189].time10to14, csvData[189].time15to19,
         csvData[189].time20to24, csvData[189].time25to29, csvData[189].time30to34, csvData[189].time35to39, csvData[189].time40to44,
@@ -406,6 +445,8 @@ function countryCircles(cityData) {
 }
 
 function pieChart(csvData) {
+
+    plot.selectAll("*").remove();
 
     var percentPieData = [];
     //**********************need to figure out how to clear the screen!! (Enter exit update pattern??)******************
@@ -485,6 +526,9 @@ function pieChart(csvData) {
 }
 
 function displayMap(geoData){
+
+    plot.selectAll("*").remove();
+
     //Based on Assignment 5
 
     //**********************Add a slider with commute time ranges, update map as user moves the slider bar****************
@@ -594,5 +638,6 @@ function parse(csvData){
     }*/
 }
 
-function parseMetadata(d){
+function parseTimeMetadata(d){
+
 }
