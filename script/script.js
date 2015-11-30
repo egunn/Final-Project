@@ -41,7 +41,6 @@ var commuteTime = d3.map();
 var timeLookup = d3.map();
 var transitColorLookup = d3.map();
 
-
 queue()
     .defer(d3.json, "data/acs2013_5yr_B08303_14000US25025090600.geojson")
     .defer(d3.json, "data/all_city_plusmetro_commute_times_acs2013_5yr_B08134_16000US3658442_formatted.json")
@@ -75,7 +74,44 @@ queue()
         //console.log(transitColorLookup);
 //////////////////////////////development area
 
+        //Nest data array to create separate arrays for cities and metro areas. Use type attribute to sort.
+        var nestedCities = d3.nest()
+            .key(function (d) {
+                return d.type
+            })
+            .entries(cityData.data);
+        console.log(nestedCities);
 
+        var circles = plot.selectAll('.circles')
+            .data(function (d) {
+                return [nestedCities[1].values[0].population]
+            }) //cannot bind to a number - needs to be an array!
+            .enter()
+            .append('g')
+            .attr('class', 'circle-graph')
+            .append('circle')
+            .attr('cx',10)
+            .attr('cy',10)
+            .attr('r',50);
+
+        var testIndex = [0, 1,2,3,4,5];
+        console.log([nestedCities[1].values[0]]); //  .transitTypes[transitMetadata[0].transitType].totalCount
+        var squares = plot.selectAll('.squares')
+            //.data(function (d,i) {
+            //    for (j=0; j<nestedCities[1].values.length; j++) {  //length is 10; should have 10 entries
+            //        [nestedCities[1].values[j].transitTypes[transitMetadata[0].transitType].totalCount]
+            //    }
+            //    return()
+            //}) //cannot bind to a number - needs to be an array!
+            .data([nestedCities[1].values[0].transitTypes[transitMetadata[0].transitType].totalCount])
+            .enter()
+            .append('g')
+            .attr('class', 'square-graph')
+            .append('circle')
+            .attr('cx',100)
+            .attr('cy',300)
+            .attr('r',50)
+            .style('fill','red');
 
 
 
@@ -130,8 +166,8 @@ queue()
 //    });
 
 
-function dataLoaded(err,geoData,pieData){
-}
+//function dataLoaded(err,geoData,pieData){
+//}
 
 function multiplePies(cityData, transitMetadata) {
 
@@ -147,7 +183,6 @@ function multiplePies(cityData, transitMetadata) {
 
 
     //Based on In-Class 9-Ex 2
-
     var percentPieData = [];
 
     //Layout function - creates angles needed to create pie charts using data
@@ -159,23 +194,21 @@ function multiplePies(cityData, transitMetadata) {
         .innerRadius(0)
         .outerRadius(35);
 
-    for (k=0; k<nestedCities[1].values.length; k++) {
+    //for each city (repres as a .values array), append an empty group and translate to the right place
+    for (k=0; k < nestedCities[1].values.length; k++) {
         var pieChartGroup = plot//.selectAll('.cities')
             .append('g')
             .attr('class', 'pie-chart-group')
             .attr('transform', 'translate(' + ((k * width / 10) + width / 10) + ',' + height / 2 + ')');
 
- //******************Need to figure out how to write labels
-        // Can't append text directly and populate here - data not bound until section below. Can't append below because
-        //focus changes; need to insert an intermediate selection variable so that it's possible to append text to group above pie charts?
-        /*
+        var pieChartLabels = pieChartGroup
             .append('text')
-            .text(function(d,i){console.log(nestedCities[1].values[i].name)})
+            .text(nestedCities[1].values[k].name)
             .attr('class', 'label')
             .attr('text-anchor', 'middle')
             .attr('font-size', '6px')
-            .style('fill', 'rgb(215,215,215)');
-            */
+            .style('fill', 'rgb(215,215,215)')
+            .attr('transform', 'translate('+ 0 + ',' + height / 4 + ')');
 
         var pieData = [
             (nestedCities[1].values[k].transitTypes[transitMetadata[0].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
