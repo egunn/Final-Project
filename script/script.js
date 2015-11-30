@@ -5,7 +5,7 @@ var width = document.getElementById('plot').clientWidth - margin.r - margin.l,
 
 
 //Scales - create color scale based on activity classification
-var scalePieColor = d3.scale.ordinal().domain([0,1,2,3,4,5,6,7]).range(['red','orange','yellow','green','lime','blue','purple','brown']); //ordinal scale does 1:1 lookup
+var scalePieColor = d3.scale.ordinal().domain([0,1,2,3,4,5,6,7]).range(['orangered','orange','darkcyan','olivedrab','lawngreen','peru','sienna','tan']); //ordinal scale does 1:1 lookup
 //need same # of items in domain and range for an ordinal scale
 var scaleColor = d3.scale.category20b(); //for now, use pre-made color category generator
 var scaleGradientColor = d3.scale.linear().domain([0,610000]).range(['white','green']);
@@ -39,6 +39,7 @@ var axisY = d3.svg.axis()
 //Set up d3.map to store a map of commute times for a given city
 var commuteTime = d3.map();
 var timeLookup = d3.map();
+var transitColorLookup = d3.map();
 
 
 queue()
@@ -46,7 +47,7 @@ queue()
     .defer(d3.json, "data/all_city_plusmetro_commute_times_acs2013_5yr_B08134_16000US3658442_formatted.json")
     .defer(d3.csv, "data/bosMetrobyCity_acs2013_5yr_B08303_14000US25025090600_csv.csv", parse)
     .defer(d3.csv, "data/cityMetadata.csv", parse)
-    .defer(d3.csv, "data/cityMetadata.csv", parse)
+    .defer(d3.csv, "data/timeMetadata.csv", parse)
     .defer(d3.csv, "data/transitMetadata.csv", parse)
     //.defer(d3.csv, "data/commute_14Age.csv", parse)
     //await saves the output of file 1 and file 2, in the order run (bostonMap should be geoJSON, csvData should be parsed csv.
@@ -62,63 +63,19 @@ queue()
         for (i = 0; i < timeMetadata.length; i++) {
             timeLookup.set(timeMetadata[i].timeLabel, timeMetadata[i].timeNumber);
         }
+
+        //This works, but transitMetadata comes in alphabetized, and doesn't line up with the colors in the pie chart
+        //drawing function (can't use .name to use lookup table, because not bound to cityData due to rebinding issue)
+        //For now, hard code.
+        //for (i = 0; i < transitMetadata.length; i++) {
+        //    transitColorLookup.set(transitMetadata[i].transitType, scalePieColor(i));
+        //}
+        //timeLookup.set(['bus', {color: ''} );
+
+        //console.log(transitColorLookup);
 //////////////////////////////development area
 
 
-        //Nest data array to create separate arrays for cities and metro areas. Use type attribute to sort.
-        var nestedCities = d3.nest()
-            .key(function (d) {
-                return d.type
-            })
-            .entries(cityData.data);
-        console.log(nestedCities);
-
-
-        //Based on In-Class 9-Ex 2
-
-        var percentPieData = [];
-
-        //Layout function - creates angles needed to create pie charts using data
-        var pieLayout = d3.layout.pie();   //need to tell it which dataset to use
-
-        var arcGenerator = d3.svg.arc()
-            //.startAngle()  //already stored in data w/ correct name by pieLayout function.
-            //.endAngle()
-            .innerRadius(0)
-            .outerRadius(50);
-
-for (k=0; k<nestedCities[1].values.length; k++) {
-    var pieChartGroup = plot//.selectAll('.cities')
-        .append('g')
-        .attr('class', 'pie-chart-group')
-        .attr('transform', 'translate(' + ((k * width / 10) + width / 10) + ',' + height / 2 + ')');
-
-    var pieData = [
-        (nestedCities[1].values[k].transitTypes[transitMetadata[0].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
-        (nestedCities[1].values[k].transitTypes[transitMetadata[1].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
-        (nestedCities[1].values[k].transitTypes[transitMetadata[2].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
-        (nestedCities[1].values[k].transitTypes[transitMetadata[3].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
-        (nestedCities[1].values[k].transitTypes[transitMetadata[4].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
-        (nestedCities[1].values[k].transitTypes[transitMetadata[5].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
-        (nestedCities[1].values[k].transitTypes[transitMetadata[6].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
-    ];
-
-//**********************Change color scale and sort function, space out evenly on page, add labels, look into object constancy
-    pieChartGroup.selectAll('pies')
-        .append('g')
-        .attr('class', 'bottom-pie')
-        .data(pieLayout(pieData))
-        .enter()
-        .append('path')
-        .attr('class', 'slice')
-        .attr('d', arcGenerator) //create geometry of path
-        .style('fill', function (d, i) {
-            //console.log(d);  Note that data is in a subobject called .data!!
-            //var classification = metadata.get(d); //returns (string) between 1-4
-            return scalePieColor(i);
-        });
-
-}
 
 
 
@@ -161,6 +118,10 @@ for (k=0; k<nestedCities[1].values.length; k++) {
                     cityMetroBubbles(cityData,timeMetadata);
                 }
 
+                else if (mode == 'btn-7') {
+                    multiplePies(cityData, transitMetadata);
+                }
+
                 else {
                     console.log('broken');
                 }
@@ -172,7 +133,81 @@ for (k=0; k<nestedCities[1].values.length; k++) {
 function dataLoaded(err,geoData,pieData){
 }
 
+function multiplePies(cityData, transitMetadata) {
+
+    plot.selectAll("*").remove();
+
+    //Nest data array to create separate arrays for cities and metro areas. Use type attribute to sort.
+    var nestedCities = d3.nest()
+        .key(function (d) {
+            return d.type
+        })
+        .entries(cityData.data);
+    console.log(nestedCities);
+
+
+    //Based on In-Class 9-Ex 2
+
+    var percentPieData = [];
+
+    //Layout function - creates angles needed to create pie charts using data
+    var pieLayout = d3.layout.pie();   //need to tell it which dataset to use
+
+    var arcGenerator = d3.svg.arc()
+        //.startAngle()  //already stored in data w/ correct name by pieLayout function.
+        //.endAngle()
+        .innerRadius(0)
+        .outerRadius(35);
+
+    for (k=0; k<nestedCities[1].values.length; k++) {
+        var pieChartGroup = plot//.selectAll('.cities')
+            .append('g')
+            .attr('class', 'pie-chart-group')
+            .attr('transform', 'translate(' + ((k * width / 10) + width / 10) + ',' + height / 2 + ')');
+
+ //******************Need to figure out how to write labels
+        // Can't append text directly and populate here - data not bound until section below. Can't append below because
+        //focus changes; need to insert an intermediate selection variable so that it's possible to append text to group above pie charts?
+        /*
+            .append('text')
+            .text(function(d,i){console.log(nestedCities[1].values[i].name)})
+            .attr('class', 'label')
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '6px')
+            .style('fill', 'rgb(215,215,215)');
+            */
+
+        var pieData = [
+            (nestedCities[1].values[k].transitTypes[transitMetadata[0].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
+            (nestedCities[1].values[k].transitTypes[transitMetadata[1].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
+            (nestedCities[1].values[k].transitTypes[transitMetadata[2].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
+            (nestedCities[1].values[k].transitTypes[transitMetadata[3].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
+            (nestedCities[1].values[k].transitTypes[transitMetadata[4].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
+            (nestedCities[1].values[k].transitTypes[transitMetadata[5].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
+            (nestedCities[1].values[k].transitTypes[transitMetadata[6].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
+        ];
+
+    //**********************Change color scale and sort function, space out evenly on page, add labels, look into object constancy
+        pieChartGroup.selectAll('pies')
+            .append('g')
+            .attr('class', 'bottom-pie')
+            .data(pieLayout(pieData))
+            .enter()
+            .append('path')
+            .attr('class', 'slice')
+            .attr('d', arcGenerator) //create geometry of path
+            .style('fill', function (d, i) {
+                //console.log(d);  Note that data is in a subobject called .data!!
+                //var classification = metadata.get(d); //returns (string) between 1-4
+                return scalePieColor(i);
+            });
+
+    }
+}
+
 function cityMetroBubbles(cityData,timeMetadata) {
+
+    plot.selectAll("*").remove();
 
     //console.log('cityData_name: ' + cityData.data[0].name);
     //console.log(cityMetadata[0].label);
@@ -190,17 +225,25 @@ function cityMetroBubbles(cityData,timeMetadata) {
     //Wk 8 in class, ex 4
 //*************will need to sort using both name and type; since names are the same, the sort won't care which order it arranges them in.
 // ignoring sort function when using string attributes; should calculate unicode value, but doesn't.
-    nestedCities[1].values.sort(function (a, b) {
-        console.log(b.name - a.name);
+//    nestedCities[1].values.sort(function (a, b) {
+//        console.log(b.name - a.name);
 //************not sorting by name! console returns NaN. Why??? Sorting by population works...
-        //return b.name- a.name;
-    });
+//        return b.name- a.name;
+//    });
 
 //************Need to implement lookup table to match x positions for different cities/metro areas; also possibly add to x-pos calc in generator fxn?
-    nestedCities[0].values.sort(function (a, b) {
+/*    nestedCities[0].values.sort(function (a, b) {
         // console.log(b.name);
-        //return b.population- a.population;
+        return b.population- a.population;
     });
+
+    nestedCities[1].values.sort(function (a, b) {
+        // console.log(b.name);
+        return b.population- a.population;
+    });
+*/
+
+//******************Need to implement sorting method to link cities and metro areas directly, and plot all circles in the correct columns!!!
 
     console.log(nestedCities);
     //upgrade/generalize the averageBubbles function to transition to new data structure (note that this version does not normalize city commute data!)
@@ -282,6 +325,7 @@ function cityMetroBubbles(cityData,timeMetadata) {
             })
             .attr('r', function (d, i) {
                 //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
+                //console.log(d.transitTypes.totalCommute.totalCount);
                 return scaleR(d.transitTypes.totalCommute.totalCount);
             })
             .style('fill', 'none')
@@ -303,8 +347,9 @@ function cityMetroBubbles(cityData,timeMetadata) {
                         return i * width / 10 + width / 10
                     })
                     .attr('cy', function (d, i) {
-                        //console.log(timeMetadata.length);
-                        return scaleY(+timeLookup.get(timeMetadata[index].timeLabel));
+                        //console.log(timeMetadata[index].timeLabel); //[index].timeLabel
+                        //console.log(timeLookup);
+                        return scaleY(+(timeLookup.get(timeMetadata[index].timeLabel)));
                     })
                     .attr('r', function (d, i) {
                         //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
