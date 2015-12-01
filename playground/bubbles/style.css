@@ -1,0 +1,61 @@
+html,body,div,ul,li,svg{
+	margin:0;
+	padding:0;
+	list-style:none;
+}
+
+/*------------Global-------------*/
+html,body{
+	height: 100%;
+	position: relative;
+	background: rgb(242,244,233);
+}
+
+.container{
+    height:100%;
+}
+.container .section{
+	width:100%;
+}
+.container .canvas{
+	width:100%;
+	background:white;
+	height:600px;
+}
+.container .controls{
+	margin-bottom:20px;
+}
+
+
+
+/*------------font-------------*/
+body{
+	font-size: 16px;
+}
+h1{ font-size:2em;}
+h2{ font-size:1.3em;}
+p{
+	font-family:"Droid Serif", serif;
+}
+
+/*------------svg--------------*/
+/*
+.axis .domain{
+    fill:none
+}
+.axis .tick line{
+    stroke:rgb(180,180,180);
+    stroke-width:1px;
+}
+.axis .tick text{
+    font-size:10px;
+    fill:rgb(180,180,180);
+}
+*/
+.domain{
+    fill:none;
+}
+.axis .tick line{
+    stroke:rgb(100,100,100);
+    stroke-width:1px;
+}

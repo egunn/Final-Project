@@ -1,0 +1,17 @@
+﻿/*Set values for all tags that might be used in the website. All possible site items are set to have no padding or
+margin. This global override ensures that everything is set up right to start.*/
+
+html,body,h1,h2,h3,h4,p,div,a,ul,li,span{
+    margin:0px;
+    padding:0px;
+}
+
+html,body {
+	height:100%;
+    position:relative;
+}
+
+h1 {
+    margin: 0,0,20,0;
+    color:purple;
+}

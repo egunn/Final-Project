@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">     <!-- needed to ensure that the browser can parse d3 code-->
+		<title>D3 project template </title>  <!-- give the page a title -->
+		<link href="style.css" rel="stylesheet"/>  <!-- tell it to look for a stylesheet -->
+		<script type="text/javascript" src="d3/d3.js"></script> <!-- tell it where d3 lives -->
+	</head>
+
+	<body>
+	    <h1>D3 experimental</h1>   <!-- give the page a title -->
+
+        <!-- ??????????????????Is it necessary to use a div here? Seemed to work the same without it... -->
+        <div> <!-- make a parent div to draw stuff in -->
+
+
+
+            <svg width="200" height="200">  <!-- insert an SVG canvas, just for the heck of it -->
+                <!-- ??????????????????Are positions relative to screen, or to the containing box?? If latter, how to make responsive? -->
+                <circle cx="25" cy="15" r="55" fill="pink" stroke="gray" stroke-width="1"></circle>
+            </svg>
+
+            <script type="text/javascript">
+            /* d3 code goes inside this tag! Needs to go at the end, because any HTML element that it uses has to have
+            been called before the script runs. When run, can create new */
+            </script>
+
+        </div>
+
+	</body>
+</html>
