@@ -99,7 +99,7 @@ queue()
                 .attr('r', 50);
 
             var testIndex = [0, 1, 2, 3, 4, 5];
-            console.log([nestedCities[1].values[0]]); //  .transitTypes[transitMetadata[0].transitType].totalCount
+            //console.log([nestedCities[1].values[0]]); //  .transitTypes[transitMetadata[0].transitType].totalCount
             var squares = plot.selectAll('.squares')
                 //.data(function (d,i) {
                 //    for (j=0; j<nestedCities[1].values.length; j++) {  //length is 10; should have 10 entries
@@ -112,10 +112,11 @@ queue()
                 .append('g')
                 .attr('class', 'square-graph');
 
-            squares.append('circle')
-                .attr('cx', 100)
-                .attr('cy', 300)
-                .attr('r', 50)
+            squares.append('rect')
+                .attr('x', 90*k)
+                .attr('y', 200)
+                .attr('width', 10)
+                .attr('height',100)
                 .style('fill', 'red');
 
             squares.append('text')
@@ -124,10 +125,10 @@ queue()
                 .attr('text-anchor', 'middle')
                 .attr('font-size', '6px')
                 .style('fill', 'rgb(215,215,215)')
-                .attr('transform', 'translate('+ 0 + ',' + height / 4 + ')');
+                .attr('transform', 'translate('+ 90*k + ',' + (5.5*height/6) + ')');
 
 
-        /*
+
         //Layout function - creates angles needed to create pie charts using data
         var pieLayout = d3.layout.pie();   //need to tell it which dataset to use
 
@@ -137,9 +138,13 @@ queue()
             .innerRadius(0)
             .outerRadius(35);
 
-        squares.data(pieLayout(function(d,i) {
+        //appends pie charts, but doesn't put them inside the squares group. Adding an extra append (without selectAll) returns an error
+        squares.selectAll('.square-graph')//.append('g')
+            //.attr('test-Pie')
+                .data(pieLayout(testIndex) /*
+                function(d,i) {
                     return nestedCities[1].values[k].transitTypes[transitMetadata[i].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount * 100
-                    }))
+                    })*/)
                 .enter()
                 .append('path')
                 .attr('class', 'slice')
@@ -148,8 +153,9 @@ queue()
                     //console.log(d);  Note that data is in a subobject called .data!!
                     //var classification = metadata.get(d); //returns (string) between 1-4
                     return scalePieColor(i);
-                });
-        */
+                })
+                .attr('transform', 'translate('+ 90*k + ',' + 3*height/4 + ')');
+
 
         }
 
@@ -926,10 +932,6 @@ function lineChart(csvData){
         .call(axisY);
 }
 
-function countryCircles(cityData) {
-    //develop code in queue function, move here later
-}
-
 function pieChart(csvData) {
 
     plot.selectAll("*").remove();
@@ -1122,10 +1124,6 @@ function parse(csvData){
         men:+d.Men,
         women:+d.Women
     }*/
-}
-
-function parseTimeMetadata(d){
-
 }
 
 
