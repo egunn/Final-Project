@@ -42,6 +42,7 @@ var timeLookup = d3.map();
 var transitColorLookup = d3.map();
 
 queue()
+    //load files
     .defer(d3.json, "data/acs2013_5yr_B08303_14000US25025090600.geojson")
     .defer(d3.json, "data/all_city_plusmetro_commute_times_acs2013_5yr_B08134_16000US3658442_formatted.json")
     .defer(d3.csv, "data/bosMetrobyCity_acs2013_5yr_B08303_14000US25025090600_csv.csv", parse)
@@ -63,6 +64,7 @@ queue()
             timeLookup.set(timeMetadata[i].timeLabel, timeMetadata[i].timeNumber);
         }
 
+        //make a lookup table for colors tied to city names
         //This works, but transitMetadata comes in alphabetized, and doesn't line up with the colors in the pie chart
         //drawing function (can't use .name to use lookup table, because not bound to cityData due to rebinding issue)
         //For now, hard code.
@@ -72,6 +74,7 @@ queue()
         //timeLookup.set(['bus', {color: ''} );
 
         //console.log(transitColorLookup);
+
 //////////////////////////////development area
 
         //Nest data array to create separate arrays for cities and metro areas. Use type attribute to sort.
@@ -82,38 +85,73 @@ queue()
             .entries(cityData.data);
         console.log(nestedCities);
 
-        var circles = plot.selectAll('.circles')
-            .data(function (d) {
-                return [nestedCities[1].values[0].population]
-            }) //cannot bind to a number - needs to be an array!
-            .enter()
-            .append('g')
-            .attr('class', 'circle-graph')
-            .append('circle')
-            .attr('cx',10)
-            .attr('cy',10)
-            .attr('r',50);
+        for (k=0; k < nestedCities[1].values.length; k++) {
+            var circles = plot.selectAll('.circles')
+                .data(function (d) {
+                    return [nestedCities[1].values[0].population]
+                }) //cannot bind to a number - needs to be an array!
+                .enter()
+                .append('g')
+                .attr('class', 'circle-graph')
+                .append('circle')
+                .attr('cx', 90*k)
+                .attr('cy', 10)
+                .attr('r', 50);
 
-        var testIndex = [0, 1,2,3,4,5];
-        console.log([nestedCities[1].values[0]]); //  .transitTypes[transitMetadata[0].transitType].totalCount
-        var squares = plot.selectAll('.squares')
-            //.data(function (d,i) {
-            //    for (j=0; j<nestedCities[1].values.length; j++) {  //length is 10; should have 10 entries
-            //        [nestedCities[1].values[j].transitTypes[transitMetadata[0].transitType].totalCount]
-            //    }
-            //    return()
-            //}) //cannot bind to a number - needs to be an array!
-            .data([nestedCities[1].values[0].transitTypes[transitMetadata[0].transitType].totalCount])
-            .enter()
-            .append('g')
-            .attr('class', 'square-graph')
-            .append('circle')
-            .attr('cx',100)
-            .attr('cy',300)
-            .attr('r',50)
-            .style('fill','red');
+            var testIndex = [0, 1, 2, 3, 4, 5];
+            console.log([nestedCities[1].values[0]]); //  .transitTypes[transitMetadata[0].transitType].totalCount
+            var squares = plot.selectAll('.squares')
+                //.data(function (d,i) {
+                //    for (j=0; j<nestedCities[1].values.length; j++) {  //length is 10; should have 10 entries
+                //        [nestedCities[1].values[j].transitTypes[transitMetadata[0].transitType].totalCount]
+                //    }
+                //    return()
+                //}) //cannot bind to a number - needs to be an array!
+                .data([nestedCities[1].values[0].transitTypes[transitMetadata[0].transitType].totalCount])
+                .enter()
+                .append('g')
+                .attr('class', 'square-graph');
+
+            squares.append('circle')
+                .attr('cx', 100)
+                .attr('cy', 300)
+                .attr('r', 50)
+                .style('fill', 'red');
+
+            squares.append('text')
+                .text(nestedCities[1].values[k].name)
+                .attr('class', 'label')
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '6px')
+                .style('fill', 'rgb(215,215,215)')
+                .attr('transform', 'translate('+ 0 + ',' + height / 4 + ')');
 
 
+        /*
+        //Layout function - creates angles needed to create pie charts using data
+        var pieLayout = d3.layout.pie();   //need to tell it which dataset to use
+
+        var arcGenerator = d3.svg.arc()
+            //.startAngle()  //already stored in data w/ correct name by pieLayout function.
+            //.endAngle()
+            .innerRadius(0)
+            .outerRadius(35);
+
+        squares.data(pieLayout(function(d,i) {
+                    return nestedCities[1].values[k].transitTypes[transitMetadata[i].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount * 100
+                    }))
+                .enter()
+                .append('path')
+                .attr('class', 'slice')
+                .attr('d', arcGenerator) //create geometry of path
+                .style('fill', function (d, i) {
+                    //console.log(d);  Note that data is in a subobject called .data!!
+                    //var classification = metadata.get(d); //returns (string) between 1-4
+                    return scalePieColor(i);
+                });
+        */
+
+        }
 
 
 
@@ -235,6 +273,21 @@ function multiplePies(cityData, transitMetadata) {
                 return scalePieColor(i);
             });
 
+        console.log(nestedCities[1].values[k].transitTypes[transitMetadata[0].transitType].overallAverageTime);
+
+        pieChartGroup.selectAll('bars')
+            .append('g')
+            .attr('class','transit-bars')
+            .data(nestedCities[1].values[k].transitTypes[transitMetadata[0].transitType].overallAverageTime)
+            .enter()
+            .append('rect')
+            .attr('class','bar')
+            .attr('x',0)
+            .attr('y',nestedCities[1].values[k].transitTypes[transitMetadata[0].transitType].overallAverageTime)
+            .attr('width',30)
+            .attr('height',5)
+
+
     }
 }
 
@@ -257,11 +310,11 @@ function cityMetroBubbles(cityData,timeMetadata) {
 
     //Wk 8 in class, ex 4
 //*************will need to sort using both name and type; since names are the same, the sort won't care which order it arranges them in.
-// ignoring sort function when using string attributes; should calculate unicode value, but doesn't.
+//ignoring sort function when using string attributes; should calculate unicode value, but doesn't.
 //    nestedCities[1].values.sort(function (a, b) {
-//        console.log(b.name - a.name);
+//        console.log((+b.name) - (+a.name));
 //************not sorting by name! console returns NaN. Why??? Sorting by population works...
-//        return b.name- a.name;
+//        return (+b.name) - (+a.name);
 //    });
 
 //************Need to implement lookup table to match x positions for different cities/metro areas; also possibly add to x-pos calc in generator fxn?
