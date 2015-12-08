@@ -5,7 +5,7 @@ var width = document.getElementById('plot').clientWidth - margin.r - margin.l,
 
 
 //Scales - create color scale based on activity classification
-var scalePieColor = d3.scale.ordinal().domain([0,1,2,3,4,5,6,7]).range(['orangered','orange','darkcyan','olivedrab','lawngreen','peru','sienna','tan']); //ordinal scale does 1:1 lookup
+var scalePieColor = d3.scale.ordinal().domain([0,1,2,3,4,5,6,7]).range(['orangered','orange','darkcyan','olivedrab','lawngreen','peru','sienna','tan','darkgreen']); //ordinal scale does 1:1 lookup
 //need same # of items in domain and range for an ordinal scale
 var scaleColor = d3.scale.category20b(); //for now, use pre-made color category generator
 var scaleGradientColor = d3.scale.linear().domain([0,610000]).range(['white','green']);
@@ -40,6 +40,7 @@ var axisY = d3.svg.axis()
 var commuteTime = d3.map();
 var timeLookup = d3.map();
 var transitColorLookup = d3.map();
+var transitColorLookup = d3.map();
 
 queue()
     //load files
@@ -64,6 +65,13 @@ queue()
             timeLookup.set(timeMetadata[i].timeLabel, timeMetadata[i].timeNumber);
         }
 
+        //console.log(transitMetadata[1].transitType);
+
+        //define a lookup table for transitMetadata; tie transit name to specific color
+        for (i = 0; i < transitMetadata.length; i++) {
+            transitColorLookup.set(transitMetadata[i].transitType, scalePieColor(i));
+        }
+
         //make a lookup table for colors tied to city names
         //This works, but transitMetadata comes in alphabetized, and doesn't line up with the colors in the pie chart
         //drawing function (can't use .name to use lookup table, because not bound to cityData due to rebinding issue)
@@ -83,22 +91,27 @@ queue()
                 return d.type
             })
             .entries(cityData.data);
-        console.log(nestedCities);
+        console.log(nestedCities[1].values);
 
-        for (k=0; k < nestedCities[1].values.length; k++) {
-            var circles = plot.selectAll('.circles')
-                .data(function (d) {
-                    return [nestedCities[1].values[0].population]
-                }) //cannot bind to a number - needs to be an array!
+        var cities = plot.selectAll('.cities')
+                .data(nestedCities[1].values) //cannot bind to a number - needs to be an array!
                 .enter()
                 .append('g')
-                .attr('class', 'circle-graph')
+                .attr('class', 'city-group');
+
+        //console.log(nestedCities[1].values[i].population);
+
+        circles = cities.selectAll('city-group')
+                .data(nestedCities[1].values)
+                .enter()
                 .append('circle')
-                .attr('cx', 90*k)
+                .attr('cx', function(d,i) {return 90*i})
                 .attr('cy', 10)
-                .attr('r', 50);
+                .attr('r', function(d,i){return scaleR(nestedCities[1].values[i].population)})
+                .style('fill', 'black');
 
             var testIndex = [0, 1, 2, 3, 4, 5];
+            console.log('testIndex '+testIndex);
             //console.log([nestedCities[1].values[0]]); //  .transitTypes[transitMetadata[0].transitType].totalCount
             var squares = plot.selectAll('.squares')
                 //.data(function (d,i) {
@@ -107,25 +120,26 @@ queue()
                 //    }
                 //    return()
                 //}) //cannot bind to a number - needs to be an array!
-                .data([nestedCities[1].values[0].transitTypes[transitMetadata[0].transitType].totalCount])
+                .data(nestedCities[1].values)//[0].transitTypes[transitMetadata[0].transitType].totalCount])
                 .enter()
                 .append('g')
-                .attr('class', 'square-graph');
+                .attr('class', 'square-graph')
+                .attr('transform', function(d,i){ return 'translate('+ 90*i + ',' + 150 + ')'});  //translate the group, then indiv items relative to the group (group position will set pie chart position later)
 
             squares.append('rect')
-                .attr('x', 90*k)
+                .attr('x', 0) //.attr('x', function(d,i) {return 90*i})
                 .attr('y', 200)
                 .attr('width', 10)
                 .attr('height',100)
                 .style('fill', 'red');
 
             squares.append('text')
-                .text(nestedCities[1].values[k].name)
+                .text(function(d,i) {return d.name}) //nestedCities[1].values[i]
                 .attr('class', 'label')
                 .attr('text-anchor', 'middle')
                 .attr('font-size', '6px')
                 .style('fill', 'rgb(215,215,215)')
-                .attr('transform', 'translate('+ 90*k + ',' + (5.5*height/6) + ')');
+                .attr('transform', function(d,i){ return 'translate('+ 0 + ',' + 100 + ')'});
 
 
 
@@ -138,13 +152,28 @@ queue()
             .innerRadius(0)
             .outerRadius(35);
 
-        //appends pie charts, but doesn't put them inside the squares group. Adding an extra append (without selectAll) returns an error
-        squares.selectAll('.square-graph')//.append('g')
+        //console.log(timeMetadata[0].timeLabel, timeMetadata[1].timeLabel,timeMetadata[2].timeLabel,timeMetadata[3].timeLabel,timeMetadata[4].timeLabel,timeMetadata[5].timeLabel,timeMetadata[6].timeLabel,timeMetadata[7].timeLabel,timeMetadata[8].timeLabel);
+        //console.log(timeMetadata.timeLabel);
+
+        //appends pie charts inside the square-graph group, using the time interval data for the total commute (wrong data! want to use transitTypes data)
+        /*squares.selectAll('.square-graph')//.append('g')
             //.attr('test-Pie')
-                .data(pieLayout(testIndex) /*
+                .data(function(d,i) {
+                //likely don't need to use lookup table in this way (though it may help with color constancy) - getting the same error with the for loop that returns an array
+                //as I got with the direct indexing of nestedCities.
+                    var localCommuteData = [];
+                    for (j=0; j<timeMetadata.length; j++){
+                        localCommuteData.push(d.transitTypes.totalCommute[timeMetadata[j].timeLabel]/d.transitTypes.totalCommute.totalCount);
+                        //console.log(d.transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+
+                    }
+                    console.log('localCommute '+ [localCommuteData]);
+                    console.log(pieLayout([localCommuteData]));
+                    return pieLayout(localCommuteData);
+                    } /*
                 function(d,i) {
                     return nestedCities[1].values[k].transitTypes[transitMetadata[i].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount * 100
-                    })*/)
+                    }))
                 .enter()
                 .append('path')
                 .attr('class', 'slice')
@@ -153,11 +182,45 @@ queue()
                     //console.log(d);  Note that data is in a subobject called .data!!
                     //var classification = metadata.get(d); //returns (string) between 1-4
                     return scalePieColor(i);
-                })
-                .attr('transform', 'translate('+ 90*k + ',' + 3*height/4 + ')');
+                });*/
+
+        //try again, using the transitTypes attribute instead...
+        squares.selectAll('.square-graph')//.append('g')
+            //.attr('test-Pie')
+            .data(function(d,i) {
+                //may not need to use lookup table in this way (though it may help with color constancy) - getting the same error with the for loop that returns an array
+                //as I got with the direct indexing of nestedCities.
+                var localCommuteData = [];
+
+                for (j=0; j<transitMetadata.length; j++){
+                    localCommuteData.push(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
+                    //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
+                }
+                //console.log('localCommute '+ [localCommuteData]);
+                //console.log(pieLayout(localCommuteData));
+                return pieLayout(localCommuteData);
+            } /*
+             function(d,i) {
+             return nestedCities[1].values[k].transitTypes[transitMetadata[i].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount * 100
+             })*/)
+            .enter()
+            .append('path')
+            .attr('class', 'slice')
+            .attr('d', arcGenerator) //create geometry of path
+            .style('fill', function (d, i) {
+                //console.log(d);  Note that data is in a subobject called .data!!
+                //var classification = metadata.get(d); //returns (string) between 1-4
+
+                //switch to lookup table to link to color explicitly?? (Need to figure out how to do this for each wedge in the pie chart; scale allows whole pie chart at once
+                //Possibly not necessary to change; as long as ordinal scale has enough entries, should be ok.
+                return scalePieColor(i);
+            });
 
 
-        }
+        // .append('g')        .attr('transform', function(d,i){ return 'translate('+ 90*i + ',' + (5.5*height/6) + ')'})
+
+
+
 
 
 
@@ -223,7 +286,7 @@ function multiplePies(cityData, transitMetadata) {
             return d.type
         })
         .entries(cityData.data);
-    console.log(nestedCities);
+    //console.log(nestedCities);
 
 
     //Based on In-Class 9-Ex 2
@@ -261,8 +324,9 @@ function multiplePies(cityData, transitMetadata) {
             (nestedCities[1].values[k].transitTypes[transitMetadata[3].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
             (nestedCities[1].values[k].transitTypes[transitMetadata[4].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
             (nestedCities[1].values[k].transitTypes[transitMetadata[5].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
-            (nestedCities[1].values[k].transitTypes[transitMetadata[6].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100,
+            (nestedCities[1].values[k].transitTypes[transitMetadata[6].transitType].totalCount / nestedCities[1].values[k].transitTypes.totalCommute.totalCount) * 100
         ];
+        console.log(pieData);
 
     //**********************Change color scale and sort function, space out evenly on page, add labels, look into object constancy
         pieChartGroup.selectAll('pies')
@@ -279,7 +343,7 @@ function multiplePies(cityData, transitMetadata) {
                 return scalePieColor(i);
             });
 
-        console.log(nestedCities[1].values[k].transitTypes[transitMetadata[0].transitType].overallAverageTime);
+        //console.log(nestedCities[1].values[k].transitTypes[transitMetadata[0].transitType].overallAverageTime);
 
         pieChartGroup.selectAll('bars')
             .append('g')
