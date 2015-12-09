@@ -85,9 +85,155 @@ queue()
 
 //////////////////////////////development area
 
+//******Need to trouble-shoot translation problems (groups translating differently, so that Y-scale ends up offset in final graph)
+        //Nest data array by city name, so that there are two subarrays containing data by type (metro/city)
+        var nestedCitiesName = d3.nest()
+            .key(function (d) {
+                return d.name
+            })
+            .entries(cityData.data);
+        console.log(nestedCitiesName);
+
+        //create 10 groups bound to the city names
+        var popCircles = plot.selectAll('.city-metro-groups')
+            .data(nestedCitiesName)
+            .enter()
+            .append('g')
+            .attr('class', 'city-metro-group')
+            .attr('transform', function(d,i){
+                return 'translate('+ ((i * width / 10) + width / 10) + ',' + 0 + ')'
+            });
+
+        //Create groups to put city-specific and metro-specific data in
+        cityPopCircles = popCircles
+            .append('g')
+            .attr('class', 'city-population-group');
+
+        metroPopCircles = popCircles
+            .append('g')
+            .attr('class', 'metro-population-group');
+
+        cityPopCircles.selectAll('city-population-circles')
+            .data(nestedCitiesName) //duplicated DC city data for metro - otherwise, returns an error b/c only one array element!
+            .enter();
+
+        cityPopCircles.append('circle')
+            .attr('cx', 0) //function (d, i) {return i * width / 10 + width / 10            })
+            .attr('cy', function (d, i) {
+                return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
+            })
+            .attr('r', function (d, i) {
+                return scaleR(d.values[1].population)
+            })
+            .style('fill', 'green');
+            //.attr('transform', function(d,i){return 'translate(' + 0 + ',' + scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime) + ')' });
+
+        cityPopCircles.append('line')
+            .attr('x1', function (d, i) {
+                return (-7-(scaleR(d.values[1].population))); //(i * width / 10 + width / 10) - 7 - (scaleR(d.values[1].population))
+            })
+            .attr('y1', function (d, i) {
+                return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
+            })
+            .attr('x2', function (d, i) {
+                return (7+  (scaleR(d.values[1].population)));//(i * width / 10 + width / 10) + 7 + (scaleR(d.values[1].population))
+            })
+            .attr('y2', function (d, i) {
+                return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
+            })
+            .style('stroke', 'blue')
+            .style('stroke-weight', '2px');
+
+        cityPopCircles.append('text')
+            .text(function (d, i) {
+                return d.key;
+            })//retrieve city label from rows array, use as text
+            //.attr('x', function (d, i) {
+            //    return i * width / 10 + width / 10
+            //})
+            .attr('class', 'label')
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '6px')
+            .style('fill', 'rgb(215,215,215)');
+
+        cityPopCircles.append('circle')
+            .attr('class','city-commuter-pop')
+            .attr('cx', 0) //function (d, i) {                return i * width / 10 + width / 10            })
+            .attr('cy', function (d, i) {
+                return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime);
+            })
+            .attr('r', function (d, i) {
+                //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
+                //console.log(d.transitTypes.totalCommute.totalCount);
+                return scaleR(d.values[1].transitTypes.totalCommute.totalCount);
+            })
+            .style('fill', 'none')
+            .style('stroke', 'red')
+            .style('stroke-width', '2px')
+            .style('stroke-dasharray', '5px 5px');
+
+         cityCommuteCircles = cityPopCircles
+            .append('g')
+            .attr('class','city-commute-circles');
+            //.attr();  //translate to match scale for population circles!!
+
+        cityCommuteCircles.selectAll('.city-commute-circles')
+            .data(function(d,i){
+                var localCommuteIntervals = [];
+
+                for (j=0; j<transitMetadata.length; j++){
+                    localCommuteIntervals.push(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+                    //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
+                }
+
+                return localCommuteIntervals;
+            })//nestedDataName gives me 10 circles, one for each city - not what I want here! Need 9 circles, one for each entry in the timeMetadata array
+            .enter()
+            .append('circle')
+            .attr('class','city-commute-circle')
+            .attr('cx',0)
+            .attr('cy',function (d, i) {
+                //for(j=0; j<timeMetadata.length; j++) {
+                   // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+                    //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
+                //}
+                //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
+                return scaleY([timeMetadata[i].timeNumber]);
+            })
+            .attr('r',function(d,i){return scaleR(d)})
+            .style('fill','red');
 
 
+        metroCommuteCircles = metroPopCircles
+            .append('g')
+            .attr('class','metro-commute-circles');
 
+        metroCommuteCircles.selectAll('.metro-commute-circles')
+            .data(function(d,i){
+                var localCommuteIntervals = [];
+
+                for (j=0; j<transitMetadata.length; j++){
+                    localCommuteIntervals.push(d.values[0].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+                    //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
+                }
+
+                return localCommuteIntervals;
+            })//nestedDataName gives me 10 circles, one for each city - not what I want here! Need 9 circles, one for each entry in the timeMetadata array
+            .enter()
+            .append('circle')
+            .attr('class','city-commute-circle')
+            .attr('cx',0)
+            .attr('cy',function (d, i) {
+                //for(j=0; j<timeMetadata.length; j++) {
+                // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+                //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
+                //}
+                //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
+                return scaleY([timeMetadata[i].timeNumber]);
+            })
+            .attr('r',function(d,i){return scaleR(d)})
+            .style('fill','none')
+            .style('stroke', 'purple');
 
 
 
@@ -107,10 +253,10 @@ queue()
                 var mode = d3.select(this).attr('id');
                 console.log(mode);
                 if (mode == 'btn-1') {
-                    displayMap(bostonMap);
+                    console.log('no function!');
                 }
                 else if (mode == 'btn-2') {
-                    pieChart(csvData);
+                    console.log('no function!');
                 }
 
                 else if (mode == 'btn-3') {
@@ -996,169 +1142,6 @@ function lineChart(csvData){
         .call(axisY);
 }
 
-function pieChart(csvData) {
-
-    plot.selectAll("*").remove();
-
-    var percentPieData = [];
-    //**********************need to figure out how to clear the screen!! (Enter exit update pattern??)******************
-
-    //choose just one city (Boston, element 189 in the csvData) for now
-    //console.log(csvData[189].name);
-
-    pieData = [csvData[189].timeunder5, csvData[189].time5to9, csvData[189].time10to14, csvData[189].time15to19,
-        csvData[189].time20to24, csvData[189].time25to29, csvData[189].time30to34, csvData[189].time35to39, csvData[189].time40to44,
-        csvData[189].time45to49,csvData[189].time60to89,csvData[189].timeover90];
-
-    //removed csvData[189].total from beginning of pieData to get rid of 100% wedge
-
-    //console.log(pieData[0]/csvData[189].total*100);
-
-    pieData.forEach(function(d,i){
-        percentPieData.push(pieData[i]/csvData[189].total*100)
-    });
-
-    //console.log(pieData);
-   // console.log(csvData);
-/*    //Set the pie chart values from the geoJSON data by compiling total,
-    commuteTime.set(d.geoid, {time:+d.time30to34, name: d.name});
-    console.log(commuteTime);
-*/
-      //Based on In-Class 9-Ex 2
-
-//Layout function - creates angles needed to create pie charts using data
-    var pieLayout = d3.layout.pie();   //need to tell it which dataset to use
-        // function(d){return d.total})  //here, use total attribute to populate pie chart.
-        /*.sort(function(a,b){
-            return b.activity1 - a.activity1;  //compare activity1 columns (comparing two strings) sort by value
-        })*/
-
-    var arcGenerator = d3.svg.arc()
-        //.startAngle()  //already stored in data w/ correct name by pieLayout function.
-        //.endAngle()
-        .innerRadius(0)
-        .outerRadius(250);
-
-    //use enter exit update to create pie slices for ea element in the array
-    var pieChart = plot
-        .append('g')
-        .attr('class','pie-chart')
-        .attr('transform','translate('+width/2+','+height/2+')');
-    pieChart
-        .selectAll('.slice')      //0 on first run, 46 thereafter (b/c ea path has class slice, defined below)
-        .data(pieLayout(percentPieData))
-        .enter()
-        .append('path')
-        .attr('class', 'slice')
-        .attr('d', arcGenerator) //create geometry of path
-        .style('fill', function(d,i){
-            //console.log(d);  Note that data is in a subobject called .data!!
-            //var classification = metadata.get(d); //returns (string) between 1-4
-            return scaleColor(i);
-        });
-    /*pieChart.append('circle')
-        .attr('r', 200)
-        .style('fill','none')
-        .style('stroke','black')
-        .style('stroke-dasharray','5px 5px')
-        .style('stroke-width','1px');
-
-    pieChart.selectAll('text')
-        .data(pieLayout(pieData))
-        .enter()
-        .append('text')
-        .text(function(d){return d.data.activity2})
-        .attr('transform', function(d){
-            var angle = ((d.startAngle+ d.endAngle)/2)/(2*Math.PI)*360-90;  //for SVG, needs to be in degrees not radians!
-            //90 because text defines angle differntely
-            return 'rotate('+angle+')'+'translate(250,0)'; //translate command inherits the x axis of the original item (self-referential)
-
-            //'rotate(a) translate(xy)'
-        });*/
-}
-
-function displayMap(geoData){
-
-    plot.selectAll("*").remove();
-
-    //Based on Assignment 5
-
-    //**********************Add a slider with commute time ranges, update map as user moves the slider bar****************
-
-    //store long/lat for Boston in an array for easy access
-    var bostonLngLat = [-71.088066,42.315520]; //from http://itouchmap.com/latlong.html
-    var chicagoLngLat = [-87.629798, 41.878114];
-
-    //Set up a mercator projection, and a d3.geo.path() generator
-    var projection = d3.geo.mercator() //set up a mercator projection function
-
-        .center(bostonLngLat)  //change the projection center to Boston
-        .translate([width/2,height/2])     //Center the projection on the screen
-        //**********note that this scale currently forces the map to extend out of the svg canvas (also, still really small)
-        .scale(18000); //from documentation page - may need to change back to a simple multiple
-
-    //set up a path generator function that uses the mercator projection function
-    var pathGenerator = d3.geo.path().projection(projection);
-
-    //Color scale
-    //****************use d3.max to calculate correct scale range**********************
-    var colorScale = d3.scale.linear().domain([0,6000]).range(['white','red']); //range 0-1 is too broad; redefine for max 20% unemployment
-
-/*    var map = d3.select('.canvas')
-        .append('svg')
-        .attr('width',width+margin.r+margin.l)
-        .attr('height',height + margin.t + margin.b)
-        .append('g')
-        .attr('class','map')
-        .attr('transform','translate('+margin.l+','+margin.t+')');
-        */
-
-    //draw map (assuming neighborhoods and blocks arrays input)
-    var map = plot.append('g')
-        .attr('class','block-groups')
-        .selectAll('.boundary')
-        .data(geoData.features)
-        .enter()
-        .append('path')
-        .attr('class','boundary')
-        .attr('d', pathGenerator)
-        .style('fill', function(d){
-
-            //console.log(d);
-
-            //return "white";
-
-            //console.log(d.properties.geoid);
-
-            var lookUpTime = (commuteTime.get(d.properties.geoid)).time;
-
-            console.log("lookup" + lookUpTime);
-
-            if (lookUpTime == 0){
-                return "gray"
-            }
-            else if (lookUpTime == undefined){
-                return "blue"
-            }
-            else {
-                return colorScale(lookUpTime);
-            }
-        })
-        .style('stroke','gray');
-
-   /* d3.select('.map')
-        .append('g')
-        .attr('class','neighborhoods')
-        .append('path')
-        .datum(neighborhoods)
-        .attr('class','neighborhoods')
-        .attr('d', pathGenerator)
-        .style('stroke-width','2px')
-        .style('fill','none')
-        .style('stroke','gray');
-*/
-
-}
 
 function parse(csvData){
 //Parse function is called from the d3.csv command - pieData is the output from the csv file, /not/ the geoJSON data!!!
@@ -1661,4 +1644,276 @@ for (k=0; k < nestedCities[1].values.length; k++) {
         .attr('height',5)
 
 
-}*/
+}
+
+/*
+ function pieChart(csvData) {
+
+ plot.selectAll("*").remove();
+
+ var percentPieData = [];
+ //**********************need to figure out how to clear the screen!! (Enter exit update pattern??)******************
+
+ //choose just one city (Boston, element 189 in the csvData) for now
+ //console.log(csvData[189].name);
+
+ pieData = [csvData[189].timeunder5, csvData[189].time5to9, csvData[189].time10to14, csvData[189].time15to19,
+ csvData[189].time20to24, csvData[189].time25to29, csvData[189].time30to34, csvData[189].time35to39, csvData[189].time40to44,
+ csvData[189].time45to49,csvData[189].time60to89,csvData[189].timeover90];
+
+ //removed csvData[189].total from beginning of pieData to get rid of 100% wedge
+
+ //console.log(pieData[0]/csvData[189].total*100);
+
+ pieData.forEach(function(d,i){
+ percentPieData.push(pieData[i]/csvData[189].total*100)
+ });
+
+ //console.log(pieData);
+ // console.log(csvData);
+     //Set the pie chart values from the geoJSON data by compiling total,
+ commuteTime.set(d.geoid, {time:+d.time30to34, name: d.name});
+ console.log(commuteTime);
+
+//Based on In-Class 9-Ex 2
+
+//Layout function - creates angles needed to create pie charts using data
+var pieLayout = d3.layout.pie();   //need to tell it which dataset to use
+// function(d){return d.total})  //here, use total attribute to populate pie chart.
+/*.sort(function(a,b){
+ return b.activity1 - a.activity1;  //compare activity1 columns (comparing two strings) sort by value
+ })
+
+var arcGenerator = d3.svg.arc()
+    //.startAngle()  //already stored in data w/ correct name by pieLayout function.
+    //.endAngle()
+    .innerRadius(0)
+    .outerRadius(250);
+
+//use enter exit update to create pie slices for ea element in the array
+var pieChart = plot
+    .append('g')
+    .attr('class','pie-chart')
+    .attr('transform','translate('+width/2+','+height/2+')');
+pieChart
+    .selectAll('.slice')      //0 on first run, 46 thereafter (b/c ea path has class slice, defined below)
+    .data(pieLayout(percentPieData))
+    .enter()
+    .append('path')
+    .attr('class', 'slice')
+    .attr('d', arcGenerator) //create geometry of path
+    .style('fill', function(d,i){
+        //console.log(d);  Note that data is in a subobject called .data!!
+        //var classification = metadata.get(d); //returns (string) between 1-4
+        return scaleColor(i);
+    });
+pieChart.append('circle')
+ .attr('r', 200)
+ .style('fill','none')
+ .style('stroke','black')
+ .style('stroke-dasharray','5px 5px')
+ .style('stroke-width','1px');
+
+ pieChart.selectAll('text')
+ .data(pieLayout(pieData))
+ .enter()
+ .append('text')
+ .text(function(d){return d.data.activity2})
+ .attr('transform', function(d){
+ var angle = ((d.startAngle+ d.endAngle)/2)/(2*Math.PI)*360-90;  //for SVG, needs to be in degrees not radians!
+ //90 because text defines angle differntely
+ return 'rotate('+angle+')'+'translate(250,0)'; //translate command inherits the x axis of the original item (self-referential)
+
+ //'rotate(a) translate(xy)'
+ });
+}
+
+function displayMap(geoData){
+
+    plot.selectAll("*").remove();
+
+    //Based on Assignment 5
+
+    //**********************Add a slider with commute time ranges, update map as user moves the slider bar****************
+
+    //store long/lat for Boston in an array for easy access
+    var bostonLngLat = [-71.088066,42.315520]; //from http://itouchmap.com/latlong.html
+    var chicagoLngLat = [-87.629798, 41.878114];
+
+    //Set up a mercator projection, and a d3.geo.path() generator
+    var projection = d3.geo.mercator() //set up a mercator projection function
+
+        .center(bostonLngLat)  //change the projection center to Boston
+        .translate([width/2,height/2])     //Center the projection on the screen
+        //**********note that this scale currently forces the map to extend out of the svg canvas (also, still really small)
+        .scale(18000); //from documentation page - may need to change back to a simple multiple
+
+    //set up a path generator function that uses the mercator projection function
+    var pathGenerator = d3.geo.path().projection(projection);
+
+    //Color scale
+    //****************use d3.max to calculate correct scale range**********************
+    var colorScale = d3.scale.linear().domain([0,6000]).range(['white','red']); //range 0-1 is too broad; redefine for max 20% unemployment
+
+        var map = d3.select('.canvas')
+     .append('svg')
+     .attr('width',width+margin.r+margin.l)
+     .attr('height',height + margin.t + margin.b)
+     .append('g')
+     .attr('class','map')
+     .attr('transform','translate('+margin.l+','+margin.t+')');
+
+
+    //draw map (assuming neighborhoods and blocks arrays input)
+    var map = plot.append('g')
+        .attr('class','block-groups')
+        .selectAll('.boundary')
+        .data(geoData.features)
+        .enter()
+        .append('path')
+        .attr('class','boundary')
+        .attr('d', pathGenerator)
+        .style('fill', function(d){
+
+            //console.log(d);
+
+            //return "white";
+
+            //console.log(d.properties.geoid);
+
+            var lookUpTime = (commuteTime.get(d.properties.geoid)).time;
+
+            console.log("lookup" + lookUpTime);
+
+            if (lookUpTime == 0){
+                return "gray"
+            }
+            else if (lookUpTime == undefined){
+                return "blue"
+            }
+            else {
+                return colorScale(lookUpTime);
+            }
+        })
+        .style('stroke','gray');
+
+     d3.select('.map')
+     .append('g')
+     .attr('class','neighborhoods')
+     .append('path')
+     .datum(neighborhoods)
+     .attr('class','neighborhoods')
+     .attr('d', pathGenerator)
+     .style('stroke-width','2px')
+     .style('fill','none')
+     .style('stroke','gray');
+
+
+}
+*/
+
+//.attr();  //translate to match scale for population circles!!
+/*     cityTransitBars.selectAll('bars')
+ .data(function(d,i) {
+ //may not need to use lookup table in this way (though it may help with color constancy) - getting the same error with the for loop that returns an array
+ //as I got with the direct indexing of nestedCities.
+ var localtransitTimes = [];
+
+ for (j=0; j<transitMetadata.length; j++){
+ localtransitTimes.push(d.transitTypes[transitMetadata[j].transitType].overallAverageTime);
+ //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
+ }
+ //console.log('localCommute '+ [localCommuteData]);
+ //console.log(scaleY());
+ return localtransitTimes;
+ })
+ .enter()
+ .append('rect')
+ .attr('class','bar')
+ .attr('x', -40) //use negative of 1/2 bar width to center in containing group
+ .attr('y', function(d,i){
+ return scaleY(d);
+ })
+ .attr('width',80)
+ .attr('height',3)
+ .style('fill', function(d,i){
+ //checked color order - coming out in order for Detroit
+ return scalePieColor(i)
+ });
+
+
+ cityCommuteCircles.selectAll('.city-commute-circles')
+
+ .data(nestedCitiesName)
+ .enter()
+ .append('circle')
+ .attr('class','city-commute-circle')
+ .attr('cx',function (d, i) {
+ return i * width / 10 + width / 10
+ })
+ .attr('cy',function (d, i) {
+ for(j=0; j<timeMetadata.length; j++) {
+ console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+ //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
+ }
+ //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
+ return scaleY(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+ })
+ .attr('r',50)
+ .style('fill','red');
+
+
+
+
+ cities.forEach(function (d, i) {
+
+ //show total number of commuters at the average commute times (on top of city population circles)
+ cities.append('circle')
+ .attr('cx', function (d, i) {
+ return i * width / 10 + width / 10
+ })
+ .attr('cy', function (d, i) {
+ return scaleY(d.transitTypes.totalCommute.overallAverageTime);
+ })
+ .attr('r', function (d, i) {
+ //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
+ //console.log(d.transitTypes.totalCommute.totalCount);
+ return scaleR(d.transitTypes.totalCommute.totalCount);
+ })
+ .style('fill', 'none')
+ .style('stroke', 'red')
+ .style('stroke-width', '2px')
+ .style('stroke-dasharray', '5px 5px');
+
+ //append circles to show distribution of commuters in each time class.
+ multiCircleGenerator(nestedCities[1], metroAreas, 'totalCommute', 'none', 'purple');
+ multiCircleGenerator(nestedCities[1], cities, 'totalCommute', 'red', 'none');  //substitute string of any other attribute on the same level ('Bus', carpool, etc)
+ //(data array, selection to append to, string for the attribute to represent
+
+ //takes a data array containing the counts for time points stored in timeMetadata as input, plots one circle for each value in timeMetadata, using counts given.
+ //*******************need to keep track of who ends up where in x - match to lookup table? Currently, plots L-->R; DC has no metroArea data!
+ function multiCircleGenerator(countData, appendTo, attributeToPlot, fillColor, strokeColor) {
+ for (index = 0; index < timeMetadata.length; index++) {
+ appendTo.append('circle')
+ .attr('cx', function (d, i) {
+ return i * width / 10 + width / 10
+ })
+ .attr('cy', function (d, i) {
+ //console.log(timeMetadata[index].timeLabel); //[index].timeLabel
+ //console.log(timeLookup);
+ return scaleY(+(timeLookup.get(timeMetadata[index].timeLabel)));
+ })
+ .attr('r', function (d, i) {
+ //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
+ return scaleR(d.transitTypes[attributeToPlot][timeMetadata[index].timeLabel]);
+ })
+ .style('fill', fillColor)
+ .style('stroke', strokeColor);
+
+ }
+ }
+ });
+ */
+
+
+
