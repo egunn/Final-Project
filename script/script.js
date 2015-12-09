@@ -11,7 +11,7 @@ var scaleColor = d3.scale.category20b(); //for now, use pre-made color category 
 var scaleGradientColor = d3.scale.linear().domain([0,610000]).range(['white','green']);
 //gradient from blue to red linear().domain([1,4]).range(['blue','red']);
 var scaleX = d3.scale.linear().domain([0,150]).range([0,width]),
-    scaleY = d3.scale.linear().domain([0,100]).range([height, 0]),
+    scaleY = d3.scale.linear().domain([0,90]).range([height, 0]),
     scaleR = d3.scale.sqrt().range([0, .02]);  //set values based on sizes that I wanted to obtain - seems awfully small?
 
 //draw plot, create svg canvas, translate as necessary
@@ -85,155 +85,6 @@ queue()
 
 //////////////////////////////development area
 
-//******Need to trouble-shoot translation problems (groups translating differently, so that Y-scale ends up offset in final graph)
-        //Nest data array by city name, so that there are two subarrays containing data by type (metro/city)
-        var nestedCitiesName = d3.nest()
-            .key(function (d) {
-                return d.name
-            })
-            .entries(cityData.data);
-        console.log(nestedCitiesName);
-
-        //create 10 groups bound to the city names
-        var popCircles = plot.selectAll('.city-metro-groups')
-            .data(nestedCitiesName)
-            .enter()
-            .append('g')
-            .attr('class', 'city-metro-group')
-            .attr('transform', function(d,i){
-                return 'translate('+ ((i * width / 10) + width / 10) + ',' + 0 + ')'
-            });
-
-        //Create groups to put city-specific and metro-specific data in
-        cityPopCircles = popCircles
-            .append('g')
-            .attr('class', 'city-population-group');
-
-        metroPopCircles = popCircles
-            .append('g')
-            .attr('class', 'metro-population-group');
-
-        cityPopCircles.selectAll('city-population-circles')
-            .data(nestedCitiesName) //duplicated DC city data for metro - otherwise, returns an error b/c only one array element!
-            .enter();
-
-        cityPopCircles.append('circle')
-            .attr('cx', 0) //function (d, i) {return i * width / 10 + width / 10            })
-            .attr('cy', function (d, i) {
-                return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
-            })
-            .attr('r', function (d, i) {
-                return scaleR(d.values[1].population)
-            })
-            .style('fill', 'green');
-            //.attr('transform', function(d,i){return 'translate(' + 0 + ',' + scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime) + ')' });
-
-        cityPopCircles.append('line')
-            .attr('x1', function (d, i) {
-                return (-7-(scaleR(d.values[1].population))); //(i * width / 10 + width / 10) - 7 - (scaleR(d.values[1].population))
-            })
-            .attr('y1', function (d, i) {
-                return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
-            })
-            .attr('x2', function (d, i) {
-                return (7+  (scaleR(d.values[1].population)));//(i * width / 10 + width / 10) + 7 + (scaleR(d.values[1].population))
-            })
-            .attr('y2', function (d, i) {
-                return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
-            })
-            .style('stroke', 'blue')
-            .style('stroke-weight', '2px');
-
-        cityPopCircles.append('text')
-            .text(function (d, i) {
-                return d.key;
-            })//retrieve city label from rows array, use as text
-            //.attr('x', function (d, i) {
-            //    return i * width / 10 + width / 10
-            //})
-            .attr('class', 'label')
-            .attr('text-anchor', 'middle')
-            .attr('font-size', '6px')
-            .style('fill', 'rgb(215,215,215)');
-
-        cityPopCircles.append('circle')
-            .attr('class','city-commuter-pop')
-            .attr('cx', 0) //function (d, i) {                return i * width / 10 + width / 10            })
-            .attr('cy', function (d, i) {
-                return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime);
-            })
-            .attr('r', function (d, i) {
-                //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
-                //console.log(d.transitTypes.totalCommute.totalCount);
-                return scaleR(d.values[1].transitTypes.totalCommute.totalCount);
-            })
-            .style('fill', 'none')
-            .style('stroke', 'red')
-            .style('stroke-width', '2px')
-            .style('stroke-dasharray', '5px 5px');
-
-         cityCommuteCircles = cityPopCircles
-            .append('g')
-            .attr('class','city-commute-circles');
-            //.attr();  //translate to match scale for population circles!!
-
-        cityCommuteCircles.selectAll('.city-commute-circles')
-            .data(function(d,i){
-                var localCommuteIntervals = [];
-
-                for (j=0; j<transitMetadata.length; j++){
-                    localCommuteIntervals.push(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
-                    //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
-                }
-
-                return localCommuteIntervals;
-            })//nestedDataName gives me 10 circles, one for each city - not what I want here! Need 9 circles, one for each entry in the timeMetadata array
-            .enter()
-            .append('circle')
-            .attr('class','city-commute-circle')
-            .attr('cx',0)
-            .attr('cy',function (d, i) {
-                //for(j=0; j<timeMetadata.length; j++) {
-                   // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
-                    //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
-                //}
-                //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
-                return scaleY([timeMetadata[i].timeNumber]);
-            })
-            .attr('r',function(d,i){return scaleR(d)})
-            .style('fill','red');
-
-
-        metroCommuteCircles = metroPopCircles
-            .append('g')
-            .attr('class','metro-commute-circles');
-
-        metroCommuteCircles.selectAll('.metro-commute-circles')
-            .data(function(d,i){
-                var localCommuteIntervals = [];
-
-                for (j=0; j<transitMetadata.length; j++){
-                    localCommuteIntervals.push(d.values[0].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
-                    //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
-                }
-
-                return localCommuteIntervals;
-            })//nestedDataName gives me 10 circles, one for each city - not what I want here! Need 9 circles, one for each entry in the timeMetadata array
-            .enter()
-            .append('circle')
-            .attr('class','city-commute-circle')
-            .attr('cx',0)
-            .attr('cy',function (d, i) {
-                //for(j=0; j<timeMetadata.length; j++) {
-                // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
-                //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
-                //}
-                //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
-                return scaleY([timeMetadata[i].timeNumber]);
-            })
-            .attr('r',function(d,i){return scaleR(d)})
-            .style('fill','none')
-            .style('stroke', 'purple');
 
 
 
@@ -260,15 +111,15 @@ queue()
                 }
 
                 else if (mode == 'btn-3') {
-                    lineChart(csvData);
+                    console.log('no function!');
                 }
 
                 else if (mode == 'btn-4') {
-                    populationBars(cityData);
+                    console.log('no function!');
                 }
 
                 else if (mode == 'btn-5') {
-                    averageBubbles(cityData);
+                    console.log('no function!');
                 }
 
                 else if (mode == 'btn-6') {
@@ -290,101 +141,6 @@ queue()
 //function dataLoaded(err,geoData,pieData){
 //}
 
-//temporary function to hold working pie chart example with nested and multiply-bound data - delete once integrated!!
-function tempPies (cityData,transitMetadata) {
-
-
-    //Nest data array to create separate arrays for cities and metro areas. Use type attribute to sort.
-    var nestedCities = d3.nest()
-        .key(function (d) {
-            return d.type
-        })
-        .entries(cityData.data);
-    console.log(nestedCities[1].values);
-
-    var cities = plot.selectAll('.cities')
-        .data(nestedCities[1].values) //cannot bind to a number - needs to be an array!
-        .enter()
-        .append('g')
-        .attr('class', 'city-group');
-
-    //console.log(nestedCities[1].values[i].population);
-
-    circles = cities.selectAll('city-group')
-        .data(nestedCities[1].values)
-        .enter()
-        .append('circle')
-        .attr('cx', function(d,i) {return 90*i})
-        .attr('cy', 10)
-        .attr('r', function(d,i){return scaleR(nestedCities[1].values[i].population)})
-        .style('fill', 'black');
-
-    var testIndex = [0, 1, 2, 3, 4, 5];
-    console.log('testIndex '+testIndex);
-    //console.log([nestedCities[1].values[0]]); //  .transitTypes[transitMetadata[0].transitType].totalCount
-    var squares = plot.selectAll('.squares')
-        .data(nestedCities[1].values)//[0].transitTypes[transitMetadata[0].transitType].totalCount])
-        .enter()
-        .append('g')
-        .attr('class', 'square-graph')
-        .attr('transform', function(d,i){ return 'translate('+ 90*i + ',' + 150 + ')'});  //translate the group, then indiv items relative to the group (group position will set pie chart position later)
-
-    squares.append('rect')
-        .attr('x', 0) //.attr('x', function(d,i) {return 90*i})
-        .attr('y', 200)
-        .attr('width', 10)
-        .attr('height',100)
-        .style('fill', 'red');
-
-    squares.append('text')
-        .text(function(d,i) {return d.name}) //nestedCities[1].values[i]
-        .attr('class', 'label')
-        .attr('text-anchor', 'middle')
-        .attr('font-size', '6px')
-        .style('fill', 'rgb(215,215,215)')
-        .attr('transform', function(d,i){ return 'translate('+ 0 + ',' + 100 + ')'});
-
-
-
-    //Layout function - creates angles needed to create pie charts using data
-    var pieLayout = d3.layout.pie();   //need to tell it which dataset to use
-
-    var arcGenerator = d3.svg.arc()
-        //.startAngle()  //already stored in data w/ correct name by pieLayout function.
-        //.endAngle()
-        .innerRadius(0)
-        .outerRadius(35);
-
-    //console.log(timeMetadata[0].timeLabel, timeMetadata[1].timeLabel,timeMetadata[2].timeLabel,timeMetadata[3].timeLabel,timeMetadata[4].timeLabel,timeMetadata[5].timeLabel,timeMetadata[6].timeLabel,timeMetadata[7].timeLabel,timeMetadata[8].timeLabel);
-    //console.log(timeMetadata.timeLabel);
-
-    //create a pie chart for each bound data object, using the transitTypes attribute (show percent bus, carpool, drive, etc)
-    squares.selectAll('.square-graph')//.append('g')
-        //.attr('test-Pie')
-        .data(function(d,i) {
-            //may not need to use lookup table in this way (though it may help with color constancy) - getting the same error with the for loop that returns an array
-            //as I got with the direct indexing of nestedCities.
-            var localCommuteData = [];
-
-            for (j=0; j<transitMetadata.length; j++){
-                localCommuteData.push(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
-                //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
-            }
-            //console.log('localCommute '+ [localCommuteData]);
-            //console.log(pieLayout(localCommuteData));
-            return pieLayout(localCommuteData);
-        })
-        .enter()
-        .append('path')
-        .attr('class', 'slice')
-        .attr('d', arcGenerator) //create geometry of path
-        .style('fill', function (d, i) {
-//****************Switch to lookup table to link to color explicitly?? (Need to figure out how to do this for each wedge in the pie chart; scale allows whole pie chart at once
-            //Possibly not necessary to change; as long as ordinal scale has enough entries, should be ok.
-            return scalePieColor(i);
-        });
-
-}
 
 function multiplePies(cityData, transitMetadata) {
     plot.selectAll("*").remove();
@@ -477,7 +233,7 @@ function multiplePies(cityData, transitMetadata) {
     //See wk 9 in class ex 1 for an example of a generator function.
 
     //append bars to cityTransit group, one for each transit type (connect to generator function to link position and color to data)
-    cityTransitBars.selectAll('bars')
+    transitBars = cityTransitBars.selectAll('bars')
         .data(function(d,i) {
             //may not need to use lookup table in this way (though it may help with color constancy) - getting the same error with the for loop that returns an array
             //as I got with the direct indexing of nestedCities.
@@ -496,7 +252,9 @@ function multiplePies(cityData, transitMetadata) {
         .attr('class','bar')
         .attr('x', -40) //use negative of 1/2 bar width to center in containing group
         .attr('y', function(d,i){
-            return scaleY(d);
+            //console.log();
+//**********Grabbing the wrong values - bound to an extracted array, so no way to get index for nested array to read overallAverageTime directly - bind differently?
+            return scaleY(nestedCities[1].values[i].transitTypes.totalCommute.overallAverageTime)
         })
         .attr('width',80)
         .attr('height',3)
@@ -505,642 +263,215 @@ function multiplePies(cityData, transitMetadata) {
             return scalePieColor(i)
         });
 
+    transitBars.transition().delay(500).duration(300)
+        .attr('y', function(d,i){
+            return scaleY(d);
+        });
+
 }
 
 function cityMetroBubbles(cityData,timeMetadata) {
 
     plot.selectAll("*").remove();
 
-    //console.log('cityData_name: ' + cityData.data[0].name);
-    //console.log(cityMetadata[0].label);
-    //console.log(cityMetadata);
-    //tempMetadata =[];
-
-    //Nest data array to create separate arrays for cities and metro areas. Use type attribute to sort.
-    var nestedCities = d3.nest()
+    //Nest data array by city name, so that there are two subarrays containing data by type (metro/city)
+    var nestedCitiesName = d3.nest()
         .key(function (d) {
-            return d.type
+            return d.name
         })
         .entries(cityData.data);
-    console.log(nestedCities);
+    console.log(nestedCitiesName);
 
-    //Wk 8 in class, ex 4
-//*************will need to sort using both name and type; since names are the same, the sort won't care which order it arranges them in.
-//ignoring sort function when using string attributes; should calculate unicode value, but doesn't.
-//    nestedCities[1].values.sort(function (a, b) {
-//        console.log((+b.name) - (+a.name));
-//************not sorting by name! console returns NaN. Why??? Sorting by population works...
-//        return (+b.name) - (+a.name);
-//    });
-
-//************Need to implement lookup table to match x positions for different cities/metro areas; also possibly add to x-pos calc in generator fxn?
-/*    nestedCities[0].values.sort(function (a, b) {
-        // console.log(b.name);
-        return b.population- a.population;
-    });
-
-    nestedCities[1].values.sort(function (a, b) {
-        // console.log(b.name);
-        return b.population- a.population;
-    });
-*/
-
-//******************Need to implement sorting method to link cities and metro areas directly, and plot all circles in the correct columns!!!
-
-    console.log(nestedCities);
-    //upgrade/generalize the averageBubbles function to transition to new data structure (note that this version does not normalize city commute data!)
-
-    var circles = plot.selectAll('.country')
-        .data(function (d) {
-            return [nestedCities[1].values[0].population]
-        }) //cannot bind to a number - needs to be an array!
+    //create 10 groups bound to the city names
+    var popCircles = plot.selectAll('.city-metro-groups')
+        .data(nestedCitiesName)
         .enter()
         .append('g')
-        .attr('class', 'circle-graph');
+        .attr('class', 'city-metro-group')
+        .attr('transform', function(d,i){
+            return 'translate('+ ((i * width / 10) + width / 10) + ',' + 0 + ')'
+        });
 
-    //Plot city circles based on population size
-    var cities = plot.selectAll('.cities')
-        .data(nestedCities[1].values)
-        .enter()
+    //Create groups to put city-specific and metro-specific data in
+    cityPopCircles = popCircles
         .append('g')
-        .attr('class', 'city');
+        .attr('class', 'city-population-group');
 
-    //Plot metro area circles based on population size
-    var metroAreas = plot.selectAll('.cities')
-        .data(nestedCities[0].values)
-        .enter()
+    metroPopCircles = popCircles
         .append('g')
-        .attr('class', 'metro');
+        .attr('class', 'metro-population-group');
 
-    //append population bubbles with y value at average commute time (mins)
-    cities.append('circle')
-        .attr('cx', function (d, i) {
-            return i * width / 10 + width / 10
-        })
-        .attr('cy', function (d, i) {
-            return scaleY(d.transitTypes.totalCommute.overallAverageTime)
-        })
+    cityPopCircles.selectAll('city-population-circles')
+        .data(nestedCitiesName) //duplicated DC city data for metro - otherwise, returns an error b/c only one array element!
+        .enter();
+
+    popCircles = cityPopCircles.append('circle')
+        .attr('cx', 0) //function (d, i) {return i * width / 10 + width / 10            })
+        .attr('cy', height/2+50)
         .attr('r', function (d, i) {
-            return scaleR(d.population)
+            return scaleR(d.values[1].population)
         })
         .style('fill', 'green');
+    //.attr('transform', function(d,i){return 'translate(' + 0 + ',' + scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime) + ')' });
 
-    cities.append('line')
-        .attr('x1', function (d, i) {
-            return (i * width / 10 + width / 10) - 7 - (scaleR(d.population))
-        })
+    popCircles.transition().delay(2000).duration(400)
+        .attr('cy', function (d, i) {
+            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
+        });
+
+    averageLine = cityPopCircles.append('line')
+        .attr('x1',0)
         .attr('y1', function (d, i) {
-            return scaleY(d.transitTypes.totalCommute.overallAverageTime)
+            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
         })
-        .attr('x2', function (d, i) {
-            return (i * width / 10 + width / 10) + 7 + (scaleR(d.population))
-        })
+        .attr('x2', 0)
         .attr('y2', function (d, i) {
-            return scaleY(d.transitTypes.totalCommute.overallAverageTime)
+            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
         })
         .style('stroke', 'blue')
         .style('stroke-weight', '2px');
 
-//*************font size isn't changing - why?
-    cities.append('text')
-        .text(function (d, i) {
-            return d.name;
-        })//retrieve city label from rows array, use as text
-        .attr('x', function (d, i) {
-            return i * width / 10 + width / 10
+    averageLine.transition().delay(3000).duration(400)
+        .attr('x1', function (d, i) {
+            return (-7-(scaleR(d.values[1].population))); //(i * width / 10 + width / 10) - 7 - (scaleR(d.values[1].population))
         })
+        .attr('x2', function (d, i) {
+            return (7+  (scaleR(d.values[1].population)));//(i * width / 10 + width / 10) + 7 + (scaleR(d.values[1].population))
+        });
+
+    var axisLabels = plot.selectAll('.axisLabels')
+        .data(timeMetadata)
+        .enter()
+        .append('text')
+        .attr('class','axis-labels')
+        .text(function(d,i){
+            return (timeMetadata[i].timeNumber + ' mins')
+        })
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+0+ ',' + scaleY(timeMetadata[i].timeNumber) + ')'})
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '12px')
+        .style('fill', 'white');
+
+    axisLabels.transition().delay(3500).duration(400)
+        .style('fill', 'rgb(215,215,215)');
+
+    cityPopCircles.append('text')
+        .text(function (d, i) {
+            return d.key;
+        })//retrieve city label from rows array, use as text
+        //.attr('x', function (d, i) {
+        //    return i * width / 10 + width / 10
+        //})
         .attr('class', 'label')
         .attr('text-anchor', 'middle')
         .attr('font-size', '6px')
         .style('fill', 'rgb(215,215,215)');
 
+    dashCircle = cityPopCircles.append('circle')
+        .attr('class','city-commuter-pop')
+        .attr('cx', 0) //function (d, i) {                return i * width / 10 + width / 10            })
+        .attr('cy', function (d, i) {
+            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime);
+        })
+        .attr('r', 0)
+        .style('fill', 'none')
+        .style('stroke', 'red')
+        .style('stroke-width', '2px')
+        .style('stroke-dasharray', '5px 5px');
 
-    cities.forEach(function (d, i) {
+    dashCircle.transition().delay(3500).duration(400)
+        .attr('r',function (d, i) {
+            //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
+            //console.log(d.transitTypes.totalCommute.totalCount);
+            return scaleR(d.values[1].transitTypes.totalCommute.totalCount);
+        });
 
-        //show total number of commuters at the average commute times (on top of city population circles)
-        cities.append('circle')
-            .attr('cx', function (d, i) {
-                return i * width / 10 + width / 10
-            })
-            .attr('cy', function (d, i) {
-                return scaleY(d.transitTypes.totalCommute.overallAverageTime);
-            })
-            .attr('r', function (d, i) {
-                //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
-                //console.log(d.transitTypes.totalCommute.totalCount);
-                return scaleR(d.transitTypes.totalCommute.totalCount);
-            })
-            .style('fill', 'none')
-            .style('stroke', 'red')
-            .style('stroke-width', '2px')
-            .style('stroke-dasharray', '5px 5px');
+    cityCommuteCircles = cityPopCircles
+        .append('g')
+        .attr('class','city-commute-circles');
+    //.attr();  //translate to match scale for population circles!!
 
-        //append circles to show distribution of commuters in each time class.
-        multiCircleGenerator(nestedCities[1], metroAreas, 'totalCommute', 'none', 'purple');
-        multiCircleGenerator(nestedCities[1], cities, 'totalCommute', 'red', 'none');  //substitute string of any other attribute on the same level ('Bus', carpool, etc)
-        //(data array, selection to append to, string for the attribute to represent
+    cityCircles = cityCommuteCircles.selectAll('.city-commute-circles')
+        .data(function(d,i){
+            var localCommuteIntervals = [];
 
-//takes a data array containing the counts for time points stored in timeMetadata as input, plots one circle for each value in timeMetadata, using counts given.
-//*******************need to keep track of who ends up where in x - match to lookup table? Currently, plots L-->R; DC has no metroArea data!
-        function multiCircleGenerator(countData, appendTo, attributeToPlot, fillColor, strokeColor) {
-            for (index = 0; index < timeMetadata.length; index++) {
-                appendTo.append('circle')
-                    .attr('cx', function (d, i) {
-                        return i * width / 10 + width / 10
-                    })
-                    .attr('cy', function (d, i) {
-                        //console.log(timeMetadata[index].timeLabel); //[index].timeLabel
-                        //console.log(timeLookup);
-                        return scaleY(+(timeLookup.get(timeMetadata[index].timeLabel)));
-                    })
-                    .attr('r', function (d, i) {
-                        //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
-                        return scaleR(d.transitTypes[attributeToPlot][timeMetadata[index].timeLabel]);
-                    })
-                    .style('fill', fillColor)
-                    .style('stroke', strokeColor);
-
+            for (j=0; j<timeMetadata.length; j++){
+                localCommuteIntervals.push(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+                //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
             }
-        }
-    });
-}
 
-function averageBubbles(cityData){
-
-    plot.selectAll("*").remove();
-
-
-    var circles = plot.selectAll('.country')
-        .data(function(d) {return [cityData.data[0].population]}) //cannot bind to a number - needs to be an array!
-        .enter()
-        .append('g')
-        .attr('class','circle-graph');
-
-    /*var testCircle = circles.append('circle')
-     .attr('cx',width/2)
-     .attr('cy', height/2)
-     .attr('r', 50)
-     .style('fill','blue');
-
-     plot.append('line')
-     .attr('x1',width/2-60)
-     .attr('y1',height/2)
-     .attr('x2',width/2+60)
-     .attr('y2',height/2)
-     .style('stroke','gray')
-     .style('stroke-weight','2px');*/
-
-
-    /*var totalCommuters = [];
-     cityData.data.forEach(function(d,i){
-     var tempData = cityData.data[i].transitTypes.totalCommute;
-     totalCommuters.push(tempData);
-     });*/
-
-    //console.log(cityData['data'][0].transitTypes['totalCommute']);
-
-    //cityData.data[0].transitTypes.totalCommute.totalCount works - single #
-    //cityData[data].transitTypes.totalCommute.totalCount - data is undefined
-    //cityData['data'].transitTypes.totalCommute.totalCount - returns an array of objects for which totalCommute is undefined
-    // Array contains all 19 objects stored in cityData.data, but can't access properties of objects directly   .
-    //cityData['data'][0] gives contents of 0th element of cityData.data. Can access all subarrays using .geoid, etc.,
-    //but can't get subarray elements for all objects in the array at once; need to use forEach loop to collect by iterating.
-    //[cityData['data']].geoid - returns undefined
-    //[cityData['data']] returns an array with a single 19-element array inside it - not helpful
-
-
-    /*var testKey = d3.nest()
-     .key(function(d) { return d.name; })
-     .entries(cityData.data);
-     console.log(testKey);*/
-
-    // var timeRanges = [0, 10,15,20,25,30,35,45,60]; //use beginning of each time interval to set circle y position]
-
-    //Plot city circles based on population size
-    var cities = plot.selectAll('.cities')
-        .data(cityData.data)
-        .enter()
-        .append('g')
-        .attr('class', 'city');
-
-    /*plot.selectAll('.city')
-     .append('circle')
-     .attr('cx', function(d,i){return 100*i*Math.random()})
-     .attr('cy', function(d,i){return 100*i*Math.random()})
-     .attr('r', 5)
-     .style('fill', 'green');*/
-
-    //Tried to append circles based on contents of totalCommute array - doesn't work!!
-    //Using numerical indices also did not work. Prints totalCommute value for each array to log, but doesn't
-    //append anything to DOM. TotalCommute array is an object that contains 9 elements - should append 9 groups?
-    //using the individual object values (totalCommute.time10tp14) does not help - doesn't appear to be a problem
-    // with the values or array format
-    /*citySelect = cities.selectAll('.city')
-     .data(function(d,i){
-     console.log(cityData.data[i].transitTypes.totalCommute);
-     return cityData.data[i].transitTypes.totalCommute;
-     })
-     .enter()
-     .append('g')
-     .attr('class', 'commuteBubbles');*/
-
-    //But it works this way, so maybe it's the data bind that doesn't work?
-    /*citySelect = cities.selectAll('.city')
-     .data(totalCommuters)
-     .enter()
-     .append('circle')
-     .attr('cx', function(d,i){return 100*i*Math.random()})
-     .attr('cy', function(d,i){return 100*i*Math.random()})
-     .attr('r', 5)
-     .style('fill', 'red')
-     .attr('class', 'commuteBubbles');*/
-
-    //create a key to hold a new variable that might bind
-    var testKey = d3.nest()
-        .key(function(d){return cityData.data[0].transitTypes.totalCommute})
-        .entries(cityData.data);
-    //console.log(testKey[0].values[0].transitTypes.totalCommute);
-
-    //This works, but appends only one circle (because testKey has dim 1?)
-    /*citySelect = cities.selectAll('.city')
-     .data(function(d){return testKey})
-     .enter()
-     .append('circle')
-     .attr('cx', function(d,i){return 100*i*Math.random()})
-     .attr('cy', function(d,i){return 100*i*Math.random()})
-     .attr('r', 5)
-     .style('fill', 'red')
-     .attr('class', 'commuteBubbles'); */
-
-    //This doesn't return anything
-    citySelect = cities.selectAll('.city')
-        .data(function(d){return testKey[0].values[0].transitTypes.totalCommute})
+            return localCommuteIntervals;
+        })//nestedDataName gives me 10 circles, one for each city - not what I want here! Need 9 circles, one for each entry in the timeMetadata array
         .enter()
         .append('circle')
-        .attr('cx', function(d,i){return 100*i*Math.random()})
-        .attr('cy', function(d,i){return 100*i*Math.random()})
-        .attr('r', 5)
-        .style('fill', 'red')
-        .attr('class', 'commuteBubbles');
-
-    //append population bubbles with y value at average commute time (mins)
-//**********************sort metro and city pops, use only city in final plot!
-    cities.append('circle')
-        .attr('cx', function(d,i){return i*width/19+width/19})
-        .attr('cy', function(d,i){return scaleY(cityData.data[i].transitTypes.totalCommute.overallAverageTime)})
-        .attr('r', function(d,i){return (cityData.data[i].population)/500000})
-        .style('fill', 'green');
-
-    cities.append('line')
-        .attr('x1',function(d,i){return (i*width/19+width/19)-10-(cityData.data[i].population)/500000})
-        .attr('y1',function(d,i){return scaleY(cityData.data[i].transitTypes.totalCommute.overallAverageTime)})
-        .attr('x2',function(d,i){return (i*width/19+width/19)+10+(cityData.data[i].population)/500000})
-        .attr('y2',function(d,i){return scaleY(cityData.data[i].transitTypes.totalCommute.overallAverageTime)})
-        .style('stroke','blue')
-        .style('stroke-weight','2px');
-
-
-    cities.append('text')
-        .text(function(d,i){return cityData.data[i].name; })//retrieve city label from rows array, use as text
-        .attr('x',function (d, i) {return i * width / 19 + width / 19})
-        .attr('class', 'label')
-        .attr('text-anchor', 'middle')
-        .attr('font-size','8px')
-        .style('fill','rgb(215,215,215)');
-
-//**************************note - value scales don't match!! Need to fix proportions in final version,
-    //change to square root scaling. scaleR = d3.scale.sqrt().range([10,50]); (Wk 7 in class 3)
-
-//**************use metadata to access totalCommute subobjects one at a time???
-    //maybe it's possible to append circles for each entry in totalCommute subarray directly to the cities selection??
-    cities.forEach(function(d,i) {
-
-        // console.log(cityData.data[i].transitTypes.totalCommute.totalCount);
-
-        // for (var j = 0; j < 8; j++) {
-        cities.append('circle')
-            .attr('cx', function (d, i) {
-                return i * width / 19 + width / 19
-            })
-            .attr('cy', function (d, i) {
-                return scaleY(10)
-            })
-            .attr('r', function (d, i) {
-                return (cityData.data[i].transitTypes.totalCommute.time10to14/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
-            })
-            //.attr('r', 10)
-            .style('fill', 'red');
+        .attr('class','city-commute-circle')
+        .attr('cx',0)
+        .attr('cy',function (d, i) {
+            //console.log(nestedCitiesName[i].values[1].transitTypes.totalCommute.overallAverageTime)
+            return scaleY(nestedCitiesName[i].values[1].transitTypes.totalCommute.overallAverageTime);
+        })//function (d, i) {
+        //for(j=0; j<timeMetadata.length; j++) {
+        // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+        //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
         //}
+        //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
+        // return scaleY([timeMetadata[i].timeNumber]);
+        //})
+        .attr('r', 0)//function(d,i){return scaleR(d)})
+        .style('fill','red');
 
-        cities.append('circle')
-            .attr('cx', function (d, i) {
-                return i * width / 19 + width / 19
-            })
-            .attr('cy', function (d, i) {
-                return scaleY(0)
-            })
-            .attr('r', function (d, i) {
-                return (cityData.data[i].transitTypes.totalCommute.timeUnder10/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
-            })
-            //.attr('r', 10)
-            .style('fill', 'red');
-
-        cities.append('circle')
-            .attr('cx', function (d, i) {
-                return i * width / 19 + width / 19
-            })
-            .attr('cy', function (d, i) {
-                return scaleY(15)
-            })
-            .attr('r', function (d, i) {
-                return (cityData.data[i].transitTypes.totalCommute.time15to19/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
-            })
-            //.attr('r', 10)
-            .style('fill', 'red');
-
-        cities.append('circle')
-            .attr('cx', function (d, i) {
-                return i * width / 19 + width / 19
-            })
-            .attr('cy', function (d, i) {
-                return scaleY(20)
-            })
-            .attr('r', function (d, i) {
-                return (cityData.data[i].transitTypes.totalCommute.time20to24/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
-            })
-            //.attr('r', 10)
-            .style('fill', 'red');
-
-        cities.append('circle')
-            .attr('cx', function (d, i) {
-                return i * width / 19 + width / 19
-            })
-            .attr('cy', function (d, i) {
-                return scaleY(25)
-            })
-            .attr('r', function (d, i) {
-                return (cityData.data[i].transitTypes.totalCommute.time25to29/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
-            })
-            //.attr('r', 10)
-            .style('fill', 'red');
-
-        cities.append('circle')
-            .attr('cx', function (d, i) {
-                return i * width / 19 + width / 19
-            })
-            .attr('cy', function (d, i) {
-                return scaleY(30)
-            })
-            .attr('r', function (d, i) {
-                return (cityData.data[i].transitTypes.totalCommute.time30to34/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
-            })
-            //.attr('r', 10)
-            .style('fill', 'red');
+    cityCircles.transition().delay(3500).duration(800)
+        .attr('cy',function (d, i) {
+            //for(j=0; j<timeMetadata.length; j++) {
+            // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+            //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
+            //}
+            //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
+            return scaleY([timeMetadata[i].timeNumber]);
+        })
+        .attr('r',function(d,i){return scaleR(d)});
 
 
-        cities.append('circle')
-            .attr('cx', function (d, i) {
-                return i * width / 19 + width / 19
-            })
-            .attr('cy', function (d, i) {
-                return scaleY(35)
-            })
-            .attr('r', function (d, i) {
-                return (cityData.data[i].transitTypes.totalCommute.time35to44/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
-            })
-            //.attr('r', 10)
-            .style('fill', 'red');
-
-        cities.append('circle')
-            .attr('cx', function (d, i) {
-                return i * width / 19 + width / 19
-            })
-            .attr('cy', function (d, i) {
-                return scaleY(45)
-            })
-            .attr('r', function (d, i) {
-                return (cityData.data[i].transitTypes.totalCommute.time45to59/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
-            })
-            //.attr('r', 10)
-            .style('fill', 'red');
-
-        cities.append('circle')
-            .attr('cx', function (d, i) {
-                return i * width / 19 + width / 19
-            })
-            .attr('cy', function (d, i) {
-                return scaleY(60)
-            })
-            .attr('r', function (d, i) {
-                //console.log(cityData.data[i].transitTypes.totalCommute.timeOver60);  //check - different values for each i
-                return (cityData.data[i].transitTypes.totalCommute.timeOver60/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
-            })
-            //.attr('r', 10)
-            .style('fill', 'red');
-
-//**************Check scaling on all dots on this page - currently not consistent between datasets - inaccurate comparisons
-        cities.append('circle')
-            .attr('cx', function (d, i) {
-                return i * width / 19 + width / 19
-            })
-            .attr('cy', function (d, i) {
-                return scaleY(75)
-            })
-            .attr('r', function (d, i) {
-                //console.log(cityData.data[i].transitTypes.totalCommute.timeOver60);  //check - different values for each i
-                return ((cityData.data[i].transitTypes.totalCommute.timeOver60)+cityData.data[i].transitTypes.totalCommute.time45to59+
-                    cityData.data[i].transitTypes.totalCommute.time35to44+cityData.data[i].transitTypes.totalCommute.time30to34/cityData.data[i].transitTypes.totalCommute.totalCount) /100000                })
-            //.attr('r', 10)
-            .style('fill', 'purple');
-
-
-    });
-
-    /*plot.selectAll('city')
-     .data(function(d,i){
-     console.log(cityData.data[i].transitTypes.totalCommute);
-     return cityData.data[i].transitTypes.totalCommute;
-     })
-     .enter()
-     .append('circle')
-     .attr('cx', width/2)  //in final version, change this to be the calculated position of the city
-     .attr('cy', function(d,i){return 10*i})
-     .attr('r',5);*/
-
-    //console.log(cityData["data"]);
-}
-
-function populationBars(cityData){
-
-    plot.selectAll("*").remove();
-
-    console.log(cityData.data[0].population); //have to use index to access subarray values - need a forEach to cycle through?
-
-    var circles = plot.selectAll('.country')
-        .data(function(d) {return [cityData.data[0].population]}) //cannot bind to a number - needs to be an array!
-        .enter()
+    metroCommuteCircles = metroPopCircles
         .append('g')
-        .attr('class','circle-graph');
+        .attr('class','metro-commute-circles');
 
-    var testCircle = circles.append('circle')
-        .attr('cx',width/2)
-        .attr('cy', height/2)
-        .attr('r', 50)
-        .style('fill','blue');
+    metroCircles = metroCommuteCircles.selectAll('.metro-commute-circles')
+        .data(function(d,i){
+            var localCommuteIntervals = [];
 
-    plot.append('line')
-        .attr('x1',width/2-60)
-        .attr('y1',height/2)
-        .attr('x2',width/2+60)
-        .attr('y2',height/2)
-        .style('stroke','gray')
-        .style('stroke-weight','2px');
+            for (j=0; j<timeMetadata.length; j++){
+                localCommuteIntervals.push(d.values[0].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+                //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
+            }
 
-    /*testCircle.transition()
-     .delay(500)
-     .attr('r',0);*/
+            return localCommuteIntervals;
+        })//nestedDataName gives me 10 circles, one for each city - not what I want here! Need 9 circles, one for each entry in the timeMetadata array
+        .enter()
+        .append('circle')
+        .attr('class','city-commute-circle')
+        .attr('cx',0)
+        .attr('cy',function (d, i) {
+            //for(j=0; j<timeMetadata.length; j++) {
+            // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+            //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
+            //}
+            //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
+            return scaleY([timeMetadata[i].timeNumber]);
+        })
+        .attr('r',0)
+        .style('fill','none')
+        .style('stroke', 'purple');
 
-    var whiteRect1 = plot.append('rect')
-        .attr('x',width/2-51)
-        .attr('y',height/2+50)
-        .attr('width',102)
-        .attr('height',0)
-        .style('fill','white');
-
-    var whiteRect2 = plot.append('rect')
-        .attr('x',width/2-51)
-        .attr('y',height/2-50)
-        .attr('width',102)
-        .attr('height',0)
-        .style('fill','white');
-
-    whiteRect1.transition().delay(1000).duration(500)
-        .attr('y',height/2)
-        .attr('height',50)
-        .style('fill','white');
-
-    whiteRect2.transition().delay(1000).duration(500)
-        .attr('y',height/2-50)
-        .attr('height',50)
-        .style('fill','white');
-
-    plot.append('line')
-        .attr('x1',width/2-60)
-        .attr('y1',height/2)
-        .attr('x2',width/2+60)
-        .attr('y2',height/2)
-        .style('stroke','gray')
-        .style('stroke-weight','2px');
-
-    //compiles the commute time totals for each city/metro area in the original data array, returns a series of objects
-    //with nested commute times.
-    var gradientDataArray = [];
-    cityData.data.forEach(function(d,i){
-        var tempData = cityData.data[i].transitTypes.totalCommute;
-
-        gradientDataArray.push(tempData);
-    });
-
-    console.log(gradientDataArray);
-
-    var gradientTestArray = [405710,470228,476524,490854,198966,512784,269934,346700,613926];
-//***************need to calc based on size of time steps for final version! **************************
-    var gradientOffsets = [0,10,20,30,40,50,60,70,80,90];
-
-//**********************http://tutorials.jenkov.com/svg/svg-gradients.html
-// also, look into nesting gradient inside a <def> - can these still be updated on the fly?
-    // from http://stackoverflow.com/questions/22138897/d3-js-getting-gradients-on-a-bar-chart
-    var gradient = plot.append("svg:defs")
-        .append("svg:linearGradient")
-        .attr("id", "gradient")
-        .attr("x1", "50%")//x1,x2,y1,y2 define a line to determine gradient placement/orientation. Positions given in % of containing object.
-        .attr("y1", "100%")
-        .attr("x2", "50%")
-        .attr("y2", "0%")
-        .attr("spreadMethod", "pad");
-
-
-    gradientTestArray.forEach(function(d,i){   //switch to use gradientDataArray
-        gradient.append("svg:stop")
-            .attr("offset", gradientOffsets[i] +"%")
-            .attr("stop-color", scaleGradientColor(gradientTestArray[i]))
-            .attr("stop-opacity", 1);
-    });
-
-    /*gradient.append("svg:stop")
-     .attr("offset", "0%")
-     .attr("stop-color", scaleGradientColor(gradientTestArray[0]))
-     .attr("stop-opacity", 1);
-
-     gradient.append("svg:stop")
-     .attr("offset", "5%")
-     .attr("stop-color", scaleGradientColor(gradientTestArray[2]))
-     .attr("stop-opacity", 1);
-
-     gradient.append("svg:stop")
-     .attr("offset", "10%")
-     .attr("stop-color", scaleGradientColor(gradientTestArray[3]))
-     .attr("stop-opacity", 1);
-
-     gradient.append("svg:stop")
-     .attr("offset", "15%")
-     .attr("stop-color", scaleGradientColor(gradientTestArray[4]))
-     .attr("stop-opacity", 1);
-
-     gradient.append("svg:stop")
-     .attr("offset", "20%")
-     .attr("stop-color", scaleGradientColor(gradientTestArray[5]))
-     .attr("stop-opacity", 1);
-
-     gradient.append("svg:stop")
-     .attr("offset", "30%")
-     .attr("stop-color", scaleGradientColor(gradientTestArray[6]))
-     .attr("stop-opacity", 1);
-
-     gradient.append("svg:stop")
-     .attr("offset", "40%")
-     .attr("stop-color", scaleGradientColor(gradientTestArray[7]))
-     .attr("stop-opacity", 1);
-
-     gradient.append("svg:stop")
-     .attr("offset", "55%")
-     .attr("stop-color", scaleGradientColor(gradientTestArray[8]))
-     .attr("stop-opacity", 1);
-     */
-
-    var testRect = plot.append('rect')
-        .attr('x',width/2-25)
-        .attr('y',height/2)
-        .attr('width',50)
-        .attr('height',0)
-        .style('fill','url(#gradient)');
-
-    testRect.transition().delay(1800)
-        .duration(1000)
-        .attr('x',width/2-25)
-        .attr('y',height/2-350/2)
-        .attr('width',50)
-        .attr('height',350);
+    metroCircles.transition().delay(5000).duration(400)
+        .attr('r',function(d,i){return scaleR(d)});
 
 }
 
 
-function lineChart(csvData){
 
-    plot.selectAll("*").remove();
-
-    //for now, choose data on commute times for Boston as the test dataset (same as used for pie chart)
-    lineData = [csvData[189].timeunder5, csvData[189].time5to9, csvData[189].time10to14, csvData[189].time15to19,
-        csvData[189].time20to24, csvData[189].time25to29, csvData[189].time30to34, csvData[189].time35to39, csvData[189].time40to44,
-        csvData[189].time45to49,csvData[189].time60to89,csvData[189].timeover90];
-
-    //Draw axes
-    plot.append('g').attr('class','axis axis-x')
-        .attr('transform','translate(0,'+height+')')
-        .call(axisX);
-    plot.append('g').attr('class','axis axis-y')
-        .call(axisY);
-}
 
 
 function parse(csvData){
@@ -1914,6 +1245,747 @@ function displayMap(geoData){
  }
  });
  */
+/*
+//temporary function to hold working pie chart example with nested and multiply-bound data - delete once integrated!!
+function tempPies (cityData,transitMetadata) {
+
+
+    //Nest data array to create separate arrays for cities and metro areas. Use type attribute to sort.
+    var nestedCities = d3.nest()
+        .key(function (d) {
+            return d.type
+        })
+        .entries(cityData.data);
+    console.log(nestedCities[1].values);
+
+    var cities = plot.selectAll('.cities')
+        .data(nestedCities[1].values) //cannot bind to a number - needs to be an array!
+        .enter()
+        .append('g')
+        .attr('class', 'city-group');
+
+    //console.log(nestedCities[1].values[i].population);
+
+    circles = cities.selectAll('city-group')
+        .data(nestedCities[1].values)
+        .enter()
+        .append('circle')
+        .attr('cx', function(d,i) {return 90*i})
+        .attr('cy', 10)
+        .attr('r', function(d,i){return scaleR(nestedCities[1].values[i].population)})
+        .style('fill', 'black');
+
+    var testIndex = [0, 1, 2, 3, 4, 5];
+    console.log('testIndex '+testIndex);
+    //console.log([nestedCities[1].values[0]]); //  .transitTypes[transitMetadata[0].transitType].totalCount
+    var squares = plot.selectAll('.squares')
+        .data(nestedCities[1].values)//[0].transitTypes[transitMetadata[0].transitType].totalCount])
+        .enter()
+        .append('g')
+        .attr('class', 'square-graph')
+        .attr('transform', function(d,i){ return 'translate('+ 90*i + ',' + 150 + ')'});  //translate the group, then indiv items relative to the group (group position will set pie chart position later)
+
+    squares.append('rect')
+        .attr('x', 0) //.attr('x', function(d,i) {return 90*i})
+        .attr('y', 200)
+        .attr('width', 10)
+        .attr('height',100)
+        .style('fill', 'red');
+
+    squares.append('text')
+        .text(function(d,i) {return d.name}) //nestedCities[1].values[i]
+        .attr('class', 'label')
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '6px')
+        .style('fill', 'rgb(215,215,215)')
+        .attr('transform', function(d,i){ return 'translate('+ 0 + ',' + 100 + ')'});
 
 
 
+    //Layout function - creates angles needed to create pie charts using data
+    var pieLayout = d3.layout.pie();   //need to tell it which dataset to use
+
+    var arcGenerator = d3.svg.arc()
+        //.startAngle()  //already stored in data w/ correct name by pieLayout function.
+        //.endAngle()
+        .innerRadius(0)
+        .outerRadius(35);
+
+    //console.log(timeMetadata[0].timeLabel, timeMetadata[1].timeLabel,timeMetadata[2].timeLabel,timeMetadata[3].timeLabel,timeMetadata[4].timeLabel,timeMetadata[5].timeLabel,timeMetadata[6].timeLabel,timeMetadata[7].timeLabel,timeMetadata[8].timeLabel);
+    //console.log(timeMetadata.timeLabel);
+
+    //create a pie chart for each bound data object, using the transitTypes attribute (show percent bus, carpool, drive, etc)
+    squares.selectAll('.square-graph')//.append('g')
+        //.attr('test-Pie')
+        .data(function(d,i) {
+            //may not need to use lookup table in this way (though it may help with color constancy) - getting the same error with the for loop that returns an array
+            //as I got with the direct indexing of nestedCities.
+            var localCommuteData = [];
+
+            for (j=0; j<transitMetadata.length; j++){
+                localCommuteData.push(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
+                //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
+            }
+            //console.log('localCommute '+ [localCommuteData]);
+            //console.log(pieLayout(localCommuteData));
+            return pieLayout(localCommuteData);
+        })
+        .enter()
+        .append('path')
+        .attr('class', 'slice')
+        .attr('d', arcGenerator) //create geometry of path
+        .style('fill', function (d, i) {
+//****************Switch to lookup table to link to color explicitly?? (Need to figure out how to do this for each wedge in the pie chart; scale allows whole pie chart at once
+            //Possibly not necessary to change; as long as ordinal scale has enough entries, should be ok.
+            return scalePieColor(i);
+        });
+
+}
+*/
+
+/*Old metrobubbles
+ plot.selectAll("*").remove();
+
+ //console.log('cityData_name: ' + cityData.data[0].name);
+ //console.log(cityMetadata[0].label);
+ //console.log(cityMetadata);
+ //tempMetadata =[];
+
+ //Nest data array to create separate arrays for cities and metro areas. Use type attribute to sort.
+ var nestedCities = d3.nest()
+ .key(function (d) {
+ return d.type
+ })
+ .entries(cityData.data);
+ console.log(nestedCities);
+
+ //Wk 8 in class, ex 4
+ //*************will need to sort using both name and type; since names are the same, the sort won't care which order it arranges them in.
+ //ignoring sort function when using string attributes; should calculate unicode value, but doesn't.
+ //    nestedCities[1].values.sort(function (a, b) {
+ //        console.log((+b.name) - (+a.name));
+ //************not sorting by name! console returns NaN. Why??? Sorting by population works...
+ //        return (+b.name) - (+a.name);
+ //    });
+
+ //************Need to implement lookup table to match x positions for different cities/metro areas; also possibly add to x-pos calc in generator fxn?
+ /*    nestedCities[0].values.sort(function (a, b) {
+ // console.log(b.name);
+ return b.population- a.population;
+ });
+
+ nestedCities[1].values.sort(function (a, b) {
+ // console.log(b.name);
+ return b.population- a.population;
+ });
+ */
+/*
+//******************Need to implement sorting method to link cities and metro areas directly, and plot all circles in the correct columns!!!
+
+console.log(nestedCities);
+//upgrade/generalize the averageBubbles function to transition to new data structure (note that this version does not normalize city commute data!)
+
+var circles = plot.selectAll('.country')
+    .data(function (d) {
+        return [nestedCities[1].values[0].population]
+    }) //cannot bind to a number - needs to be an array!
+    .enter()
+    .append('g')
+    .attr('class', 'circle-graph');
+
+//Plot city circles based on population size
+var cities = plot.selectAll('.cities')
+    .data(nestedCities[1].values)
+    .enter()
+    .append('g')
+    .attr('class', 'city');
+
+//Plot metro area circles based on population size
+var metroAreas = plot.selectAll('.cities')
+    .data(nestedCities[0].values)
+    .enter()
+    .append('g')
+    .attr('class', 'metro');
+/*
+//append population bubbles with y value at average commute time (mins)
+cities.append('circle')
+    .attr('cx', function (d, i) {
+        return i * width / 10 + width / 10
+    })
+    .attr('cy', function (d, i) {
+        return scaleY(d.transitTypes.totalCommute.overallAverageTime)
+    })
+    .attr('r', function (d, i) {
+        return scaleR(d.population)
+    })
+    .style('fill', 'green');
+
+cities.append('line')
+    .attr('x1', function (d, i) {
+        return (i * width / 10 + width / 10) - 7 - (scaleR(d.population))
+    })
+    .attr('y1', function (d, i) {
+        return scaleY(d.transitTypes.totalCommute.overallAverageTime)
+    })
+    .attr('x2', function (d, i) {
+        return (i * width / 10 + width / 10) + 7 + (scaleR(d.population))
+    })
+    .attr('y2', function (d, i) {
+        return scaleY(d.transitTypes.totalCommute.overallAverageTime)
+    })
+    .style('stroke', 'blue')
+    .style('stroke-weight', '2px');
+
+//*************font size isn't changing - why?
+cities.append('text')
+    .text(function (d, i) {
+        return d.name;
+    })//retrieve city label from rows array, use as text
+    .attr('x', function (d, i) {
+        return i * width / 10 + width / 10
+    })
+    .attr('class', 'label')
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '6px')
+    .style('fill', 'rgb(215,215,215)');
+
+
+cities.forEach(function (d, i) {
+
+    //show total number of commuters at the average commute times (on top of city population circles)
+    cities.append('circle')
+        .attr('cx', function (d, i) {
+            return i * width / 10 + width / 10
+        })
+        .attr('cy', function (d, i) {
+            return scaleY(d.transitTypes.totalCommute.overallAverageTime);
+        })
+        .attr('r', function (d, i) {
+            //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
+            //console.log(d.transitTypes.totalCommute.totalCount);
+            return scaleR(d.transitTypes.totalCommute.totalCount);
+        })
+        .style('fill', 'none')
+        .style('stroke', 'red')
+        .style('stroke-width', '2px')
+        .style('stroke-dasharray', '5px 5px');
+
+    //append circles to show distribution of commuters in each time class.
+    multiCircleGenerator(nestedCities[1], metroAreas, 'totalCommute', 'none', 'purple');
+    multiCircleGenerator(nestedCities[1], cities, 'totalCommute', 'red', 'none');  //substitute string of any other attribute on the same level ('Bus', carpool, etc)
+    //(data array, selection to append to, string for the attribute to represent
+
+//takes a data array containing the counts for time points stored in timeMetadata as input, plots one circle for each value in timeMetadata, using counts given.
+//*******************need to keep track of who ends up where in x - match to lookup table? Currently, plots L-->R; DC has no metroArea data!
+    function multiCircleGenerator(countData, appendTo, attributeToPlot, fillColor, strokeColor) {
+        for (index = 0; index < timeMetadata.length; index++) {
+            appendTo.append('circle')
+                .attr('cx', function (d, i) {
+                    return i * width / 10 + width / 10
+                })
+                .attr('cy', function (d, i) {
+                    //console.log(timeMetadata[index].timeLabel); //[index].timeLabel
+                    //console.log(timeLookup);
+                    return scaleY(+(timeLookup.get(timeMetadata[index].timeLabel)));
+                })
+                .attr('r', function (d, i) {
+                    //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
+                    return scaleR(d.transitTypes[attributeToPlot][timeMetadata[index].timeLabel]);
+                })
+                .style('fill', fillColor)
+                .style('stroke', strokeColor);
+
+        }
+    }
+});
+
+ */
+
+
+/*
+
+ function averageBubbles(cityData){
+
+ plot.selectAll("*").remove();
+
+
+ var circles = plot.selectAll('.country')
+ .data(function(d) {return [cityData.data[0].population]}) //cannot bind to a number - needs to be an array!
+ .enter()
+ .append('g')
+ .attr('class','circle-graph');
+
+ /*var testCircle = circles.append('circle')
+ .attr('cx',width/2)
+ .attr('cy', height/2)
+ .attr('r', 50)
+ .style('fill','blue');
+
+ plot.append('line')
+ .attr('x1',width/2-60)
+ .attr('y1',height/2)
+ .attr('x2',width/2+60)
+ .attr('y2',height/2)
+ .style('stroke','gray')
+ .style('stroke-weight','2px');*/
+
+
+/*var totalCommuters = [];
+ cityData.data.forEach(function(d,i){
+ var tempData = cityData.data[i].transitTypes.totalCommute;
+ totalCommuters.push(tempData);
+ });*/
+
+//console.log(cityData['data'][0].transitTypes['totalCommute']);
+
+//cityData.data[0].transitTypes.totalCommute.totalCount works - single #
+//cityData[data].transitTypes.totalCommute.totalCount - data is undefined
+//cityData['data'].transitTypes.totalCommute.totalCount - returns an array of objects for which totalCommute is undefined
+// Array contains all 19 objects stored in cityData.data, but can't access properties of objects directly   .
+//cityData['data'][0] gives contents of 0th element of cityData.data. Can access all subarrays using .geoid, etc.,
+//but can't get subarray elements for all objects in the array at once; need to use forEach loop to collect by iterating.
+//[cityData['data']].geoid - returns undefined
+//[cityData['data']] returns an array with a single 19-element array inside it - not helpful
+
+
+/*var testKey = d3.nest()
+ .key(function(d) { return d.name; })
+ .entries(cityData.data);
+ console.log(testKey);
+
+// var timeRanges = [0, 10,15,20,25,30,35,45,60]; //use beginning of each time interval to set circle y position]
+
+//Plot city circles based on population size
+var cities = plot.selectAll('.cities')
+    .data(cityData.data)
+    .enter()
+    .append('g')
+    .attr('class', 'city');
+
+plot.selectAll('.city')
+ .append('circle')
+ .attr('cx', function(d,i){return 100*i*Math.random()})
+ .attr('cy', function(d,i){return 100*i*Math.random()})
+ .attr('r', 5)
+ .style('fill', 'green');
+
+//Tried to append circles based on contents of totalCommute array - doesn't work!!
+//Using numerical indices also did not work. Prints totalCommute value for each array to log, but doesn't
+//append anything to DOM. TotalCommute array is an object that contains 9 elements - should append 9 groups?
+//using the individual object values (totalCommute.time10tp14) does not help - doesn't appear to be a problem
+// with the values or array format
+/*citySelect = cities.selectAll('.city')
+ .data(function(d,i){
+ console.log(cityData.data[i].transitTypes.totalCommute);
+ return cityData.data[i].transitTypes.totalCommute;
+ })
+ .enter()
+ .append('g')
+ .attr('class', 'commuteBubbles');*/
+
+//But it works this way, so maybe it's the data bind that doesn't work?
+/*citySelect = cities.selectAll('.city')
+ .data(totalCommuters)
+ .enter()
+ .append('circle')
+ .attr('cx', function(d,i){return 100*i*Math.random()})
+ .attr('cy', function(d,i){return 100*i*Math.random()})
+ .attr('r', 5)
+ .style('fill', 'red')
+ .attr('class', 'commuteBubbles');
+
+//create a key to hold a new variable that might bind
+var testKey = d3.nest()
+    .key(function(d){return cityData.data[0].transitTypes.totalCommute})
+    .entries(cityData.data);
+//console.log(testKey[0].values[0].transitTypes.totalCommute);
+
+//This works, but appends only one circle (because testKey has dim 1?)
+/*citySelect = cities.selectAll('.city')
+ .data(function(d){return testKey})
+ .enter()
+ .append('circle')
+ .attr('cx', function(d,i){return 100*i*Math.random()})
+ .attr('cy', function(d,i){return 100*i*Math.random()})
+ .attr('r', 5)
+ .style('fill', 'red')
+ .attr('class', 'commuteBubbles');
+
+//This doesn't return anything
+citySelect = cities.selectAll('.city')
+    .data(function(d){return testKey[0].values[0].transitTypes.totalCommute})
+    .enter()
+    .append('circle')
+    .attr('cx', function(d,i){return 100*i*Math.random()})
+    .attr('cy', function(d,i){return 100*i*Math.random()})
+    .attr('r', 5)
+    .style('fill', 'red')
+    .attr('class', 'commuteBubbles');
+
+//append population bubbles with y value at average commute time (mins)
+//**********************sort metro and city pops, use only city in final plot!
+cities.append('circle')
+    .attr('cx', function(d,i){return i*width/19+width/19})
+    .attr('cy', function(d,i){return scaleY(cityData.data[i].transitTypes.totalCommute.overallAverageTime)})
+    .attr('r', function(d,i){return (cityData.data[i].population)/500000})
+    .style('fill', 'green');
+
+cities.append('line')
+    .attr('x1',function(d,i){return (i*width/19+width/19)-10-(cityData.data[i].population)/500000})
+    .attr('y1',function(d,i){return scaleY(cityData.data[i].transitTypes.totalCommute.overallAverageTime)})
+    .attr('x2',function(d,i){return (i*width/19+width/19)+10+(cityData.data[i].population)/500000})
+    .attr('y2',function(d,i){return scaleY(cityData.data[i].transitTypes.totalCommute.overallAverageTime)})
+    .style('stroke','blue')
+    .style('stroke-weight','2px');
+
+
+cities.append('text')
+    .text(function(d,i){return cityData.data[i].name; })//retrieve city label from rows array, use as text
+    .attr('x',function (d, i) {return i * width / 19 + width / 19})
+    .attr('class', 'label')
+    .attr('text-anchor', 'middle')
+    .attr('font-size','8px')
+    .style('fill','rgb(215,215,215)');
+
+//**************************note - value scales don't match!! Need to fix proportions in final version,
+//change to square root scaling. scaleR = d3.scale.sqrt().range([10,50]); (Wk 7 in class 3)
+
+//**************use metadata to access totalCommute subobjects one at a time???
+//maybe it's possible to append circles for each entry in totalCommute subarray directly to the cities selection??
+cities.forEach(function(d,i) {
+
+    // console.log(cityData.data[i].transitTypes.totalCommute.totalCount);
+
+    // for (var j = 0; j < 8; j++) {
+    cities.append('circle')
+        .attr('cx', function (d, i) {
+            return i * width / 19 + width / 19
+        })
+        .attr('cy', function (d, i) {
+            return scaleY(10)
+        })
+        .attr('r', function (d, i) {
+            return (cityData.data[i].transitTypes.totalCommute.time10to14/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
+        })
+        //.attr('r', 10)
+        .style('fill', 'red');
+    //}
+
+    cities.append('circle')
+        .attr('cx', function (d, i) {
+            return i * width / 19 + width / 19
+        })
+        .attr('cy', function (d, i) {
+            return scaleY(0)
+        })
+        .attr('r', function (d, i) {
+            return (cityData.data[i].transitTypes.totalCommute.timeUnder10/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
+        })
+        //.attr('r', 10)
+        .style('fill', 'red');
+
+    cities.append('circle')
+        .attr('cx', function (d, i) {
+            return i * width / 19 + width / 19
+        })
+        .attr('cy', function (d, i) {
+            return scaleY(15)
+        })
+        .attr('r', function (d, i) {
+            return (cityData.data[i].transitTypes.totalCommute.time15to19/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
+        })
+        //.attr('r', 10)
+        .style('fill', 'red');
+
+    cities.append('circle')
+        .attr('cx', function (d, i) {
+            return i * width / 19 + width / 19
+        })
+        .attr('cy', function (d, i) {
+            return scaleY(20)
+        })
+        .attr('r', function (d, i) {
+            return (cityData.data[i].transitTypes.totalCommute.time20to24/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
+        })
+        //.attr('r', 10)
+        .style('fill', 'red');
+
+    cities.append('circle')
+        .attr('cx', function (d, i) {
+            return i * width / 19 + width / 19
+        })
+        .attr('cy', function (d, i) {
+            return scaleY(25)
+        })
+        .attr('r', function (d, i) {
+            return (cityData.data[i].transitTypes.totalCommute.time25to29/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
+        })
+        //.attr('r', 10)
+        .style('fill', 'red');
+
+    cities.append('circle')
+        .attr('cx', function (d, i) {
+            return i * width / 19 + width / 19
+        })
+        .attr('cy', function (d, i) {
+            return scaleY(30)
+        })
+        .attr('r', function (d, i) {
+            return (cityData.data[i].transitTypes.totalCommute.time30to34/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
+        })
+        //.attr('r', 10)
+        .style('fill', 'red');
+
+
+    cities.append('circle')
+        .attr('cx', function (d, i) {
+            return i * width / 19 + width / 19
+        })
+        .attr('cy', function (d, i) {
+            return scaleY(35)
+        })
+        .attr('r', function (d, i) {
+            return (cityData.data[i].transitTypes.totalCommute.time35to44/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
+        })
+        //.attr('r', 10)
+        .style('fill', 'red');
+
+    cities.append('circle')
+        .attr('cx', function (d, i) {
+            return i * width / 19 + width / 19
+        })
+        .attr('cy', function (d, i) {
+            return scaleY(45)
+        })
+        .attr('r', function (d, i) {
+            return (cityData.data[i].transitTypes.totalCommute.time45to59/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
+        })
+        //.attr('r', 10)
+        .style('fill', 'red');
+
+    cities.append('circle')
+        .attr('cx', function (d, i) {
+            return i * width / 19 + width / 19
+        })
+        .attr('cy', function (d, i) {
+            return scaleY(60)
+        })
+        .attr('r', function (d, i) {
+            //console.log(cityData.data[i].transitTypes.totalCommute.timeOver60);  //check - different values for each i
+            return (cityData.data[i].transitTypes.totalCommute.timeOver60/cityData.data[i].transitTypes.totalCommute.totalCount) * 50
+        })
+        //.attr('r', 10)
+        .style('fill', 'red');
+
+//**************Check scaling on all dots on this page - currently not consistent between datasets - inaccurate comparisons
+    cities.append('circle')
+        .attr('cx', function (d, i) {
+            return i * width / 19 + width / 19
+        })
+        .attr('cy', function (d, i) {
+            return scaleY(75)
+        })
+        .attr('r', function (d, i) {
+            //console.log(cityData.data[i].transitTypes.totalCommute.timeOver60);  //check - different values for each i
+            return ((cityData.data[i].transitTypes.totalCommute.timeOver60)+cityData.data[i].transitTypes.totalCommute.time45to59+
+                cityData.data[i].transitTypes.totalCommute.time35to44+cityData.data[i].transitTypes.totalCommute.time30to34/cityData.data[i].transitTypes.totalCommute.totalCount) /100000                })
+        //.attr('r', 10)
+        .style('fill', 'purple');
+
+
+});
+
+plot.selectAll('city')
+ .data(function(d,i){
+ console.log(cityData.data[i].transitTypes.totalCommute);
+ return cityData.data[i].transitTypes.totalCommute;
+ })
+ .enter()
+ .append('circle')
+ .attr('cx', width/2)  //in final version, change this to be the calculated position of the city
+ .attr('cy', function(d,i){return 10*i})
+ .attr('r',5);
+
+//console.log(cityData["data"]);
+}
+
+ */
+
+
+/*
+ function populationBars(cityData){
+
+ plot.selectAll("*").remove();
+
+ console.log(cityData.data[0].population); //have to use index to access subarray values - need a forEach to cycle through?
+
+ var circles = plot.selectAll('.country')
+ .data(function(d) {return [cityData.data[0].population]}) //cannot bind to a number - needs to be an array!
+ .enter()
+ .append('g')
+ .attr('class','circle-graph');
+
+ var testCircle = circles.append('circle')
+ .attr('cx',width/2)
+ .attr('cy', height/2)
+ .attr('r', 50)
+ .style('fill','blue');
+
+ plot.append('line')
+ .attr('x1',width/2-60)
+ .attr('y1',height/2)
+ .attr('x2',width/2+60)
+ .attr('y2',height/2)
+ .style('stroke','gray')
+ .style('stroke-weight','2px');
+
+ testCircle.transition()
+ .delay(500)
+ .attr('r',0);
+
+var whiteRect1 = plot.append('rect')
+    .attr('x',width/2-51)
+    .attr('y',height/2+50)
+    .attr('width',102)
+    .attr('height',0)
+    .style('fill','white');
+
+var whiteRect2 = plot.append('rect')
+    .attr('x',width/2-51)
+    .attr('y',height/2-50)
+    .attr('width',102)
+    .attr('height',0)
+    .style('fill','white');
+
+whiteRect1.transition().delay(1000).duration(500)
+    .attr('y',height/2)
+    .attr('height',50)
+    .style('fill','white');
+
+whiteRect2.transition().delay(1000).duration(500)
+    .attr('y',height/2-50)
+    .attr('height',50)
+    .style('fill','white');
+
+plot.append('line')
+    .attr('x1',width/2-60)
+    .attr('y1',height/2)
+    .attr('x2',width/2+60)
+    .attr('y2',height/2)
+    .style('stroke','gray')
+    .style('stroke-weight','2px');
+
+//compiles the commute time totals for each city/metro area in the original data array, returns a series of objects
+//with nested commute times.
+var gradientDataArray = [];
+cityData.data.forEach(function(d,i){
+    var tempData = cityData.data[i].transitTypes.totalCommute;
+
+    gradientDataArray.push(tempData);
+});
+
+console.log(gradientDataArray);
+
+var gradientTestArray = [405710,470228,476524,490854,198966,512784,269934,346700,613926];
+//***************need to calc based on size of time steps for final version! **************************
+var gradientOffsets = [0,10,20,30,40,50,60,70,80,90];
+
+//**********************http://tutorials.jenkov.com/svg/svg-gradients.html
+// also, look into nesting gradient inside a <def> - can these still be updated on the fly?
+// from http://stackoverflow.com/questions/22138897/d3-js-getting-gradients-on-a-bar-chart
+var gradient = plot.append("svg:defs")
+    .append("svg:linearGradient")
+    .attr("id", "gradient")
+    .attr("x1", "50%")//x1,x2,y1,y2 define a line to determine gradient placement/orientation. Positions given in % of containing object.
+    .attr("y1", "100%")
+    .attr("x2", "50%")
+    .attr("y2", "0%")
+    .attr("spreadMethod", "pad");
+
+
+gradientTestArray.forEach(function(d,i){   //switch to use gradientDataArray
+    gradient.append("svg:stop")
+        .attr("offset", gradientOffsets[i] +"%")
+        .attr("stop-color", scaleGradientColor(gradientTestArray[i]))
+        .attr("stop-opacity", 1);
+});
+
+gradient.append("svg:stop")
+ .attr("offset", "0%")
+ .attr("stop-color", scaleGradientColor(gradientTestArray[0]))
+ .attr("stop-opacity", 1);
+
+ gradient.append("svg:stop")
+ .attr("offset", "5%")
+ .attr("stop-color", scaleGradientColor(gradientTestArray[2]))
+ .attr("stop-opacity", 1);
+
+ gradient.append("svg:stop")
+ .attr("offset", "10%")
+ .attr("stop-color", scaleGradientColor(gradientTestArray[3]))
+ .attr("stop-opacity", 1);
+
+ gradient.append("svg:stop")
+ .attr("offset", "15%")
+ .attr("stop-color", scaleGradientColor(gradientTestArray[4]))
+ .attr("stop-opacity", 1);
+
+ gradient.append("svg:stop")
+ .attr("offset", "20%")
+ .attr("stop-color", scaleGradientColor(gradientTestArray[5]))
+ .attr("stop-opacity", 1);
+
+ gradient.append("svg:stop")
+ .attr("offset", "30%")
+ .attr("stop-color", scaleGradientColor(gradientTestArray[6]))
+ .attr("stop-opacity", 1);
+
+ gradient.append("svg:stop")
+ .attr("offset", "40%")
+ .attr("stop-color", scaleGradientColor(gradientTestArray[7]))
+ .attr("stop-opacity", 1);
+
+ gradient.append("svg:stop")
+ .attr("offset", "55%")
+ .attr("stop-color", scaleGradientColor(gradientTestArray[8]))
+ .attr("stop-opacity", 1);
+
+
+var testRect = plot.append('rect')
+    .attr('x',width/2-25)
+    .attr('y',height/2)
+    .attr('width',50)
+    .attr('height',0)
+    .style('fill','url(#gradient)');
+
+testRect.transition().delay(1800)
+    .duration(1000)
+    .attr('x',width/2-25)
+    .attr('y',height/2-350/2)
+    .attr('width',50)
+    .attr('height',350);
+
+}
+
+ */
+
+
+/*
+function lineChart(csvData){
+
+    plot.selectAll("*").remove();
+
+    //for now, choose data on commute times for Boston as the test dataset (same as used for pie chart)
+    lineData = [csvData[189].timeunder5, csvData[189].time5to9, csvData[189].time10to14, csvData[189].time15to19,
+        csvData[189].time20to24, csvData[189].time25to29, csvData[189].time30to34, csvData[189].time35to39, csvData[189].time40to44,
+        csvData[189].time45to49,csvData[189].time60to89,csvData[189].timeover90];
+
+    //Draw axes
+    plot.append('g').attr('class','axis axis-x')
+        .attr('transform','translate(0,'+height+')')
+        .call(axisX);
+    plot.append('g').attr('class','axis axis-y')
+        .call(axisY);
+}
+
+    */
