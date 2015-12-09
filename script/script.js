@@ -127,7 +127,7 @@ queue()
                 }
 
                 else if (mode == 'btn-7') {
-                    multiplePies(cityData, transitMetadata);
+                    multiplePies(cityData, transitMetadata, timeMetadata);
                 }
 
                 else {
@@ -142,16 +142,16 @@ queue()
 //}
 
 
-function multiplePies(cityData, transitMetadata) {
+function multiplePies(cityData, transitMetadata, timeMetadata) {
     plot.selectAll("*").remove();
 
-    //Nest data array to create separate arrays for cities and metro areas. Use type attribute to sort.
-    var nestedCities = d3.nest()
+     //Nest data array by city name, so that there are two subarrays containing data by type (metro/city)
+    var nestedCitiesName = d3.nest()
         .key(function (d) {
-            return d.type
+            return d.name
         })
         .entries(cityData.data);
-    //console.log(nestedCities);
+    console.log(nestedCitiesName);
 
 
     //Based on In-Class 9-Ex 2
@@ -166,8 +166,25 @@ function multiplePies(cityData, transitMetadata) {
         .innerRadius(0)
         .outerRadius(35);
 
+    var axisLabels = plot.selectAll('.axisLabels')
+        .data(timeMetadata)
+        .enter()
+        .append('text')
+        .attr('class','axis-labels')
+        .text(function(d,i){
+            return (timeMetadata[i].timeNumber + ' mins')
+        })
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+0+ ',' + scaleY(timeMetadata[i].timeNumber) + ')'})
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '12px')
+        .style('fill', 'rgb(215,215,215)');
+
     var cityTransitTypes = plot.selectAll('.transit-types')
-        .data(nestedCities[1].values)
+        .data(function(d,i){
+            //console.log(nestedCitiesName[i].values[1]);
+            return nestedCitiesName})
         .enter()
         .append('g')
         .attr('class', 'city-transit-types');
@@ -175,19 +192,22 @@ function multiplePies(cityData, transitMetadata) {
 
     cityTransitTypes
         .append('text')
-        .text(function(d,i){return nestedCities[1].values[i].name}) //.attr('r', function(d,i){return scaleR(nestedCities[1].values[i].population)})
+        .text(function(d,i){
+            //console.log(d.values);
+            return d.key}) //.attr('r', function(d,i){return scaleR(nestedCities[1].values[i].population)})
         .attr('class', 'label')
         .attr('text-anchor', 'middle')
         .attr('font-size', '6px')
         .style('fill', 'rgb(215,215,215)')
-        .attr('transform', function(d,i){return 'translate('+ ((i * width / 10) + width / 10) + ',' + height / 4 + ')'});
+//********Fix height to match other function!!!
+        .attr('transform', function(d,i){return 'translate('+ ((i * width / 10) + width / 10) + ',' + height / 15 + ')'});
 
 
     cityTransitTypes.append('line')
         .attr('x1',function(d,i){return ((i * width / 10) + width / 10)-47})
-        .attr('y1',function(d,i){return scaleY(d.transitTypes.totalCommute.overallAverageTime)})
+        .attr('y1',function(d,i){return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)})
         .attr('x2',function(d,i){return ((i * width / 10) + width / 10)+47})
-        .attr('y2',function(d,i){return scaleY(d.transitTypes.totalCommute.overallAverageTime)})
+        .attr('y2',function(d,i){return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)})
         .style('stroke','blue')
         .style('stroke-weight','2px');
 
@@ -195,7 +215,7 @@ function multiplePies(cityData, transitMetadata) {
     cityPies = cityTransitTypes
         .append('g')
         .attr('class','transit-pie-chart')
-        .attr('transform', function(d,i){return 'translate(' + ((i * width / 10) + width / 10) + ',' + scaleY(d.transitTypes.totalCommute.overallAverageTime) + ')' });
+        .attr('transform', function(d,i){return 'translate(' + ((i * width / 10) + width / 10) + ',' + scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime) + ')' });
 
 
     cityPies.selectAll('.transit-pie-chart')//.append('g')
@@ -205,7 +225,8 @@ function multiplePies(cityData, transitMetadata) {
             var localCommuteData = [];
 
             for (j=0; j<transitMetadata.length; j++){
-                localCommuteData.push(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
+                //console.log(d.values[1].transitTypes.totalCommute.totalCount);
+                localCommuteData.push(d.values[1].transitTypes[transitMetadata[j].transitType].totalCount/d.values[1].transitTypes.totalCommute.totalCount*100);
                 //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
             }
             //console.log('localCommute '+ [localCommuteData]);
@@ -240,7 +261,7 @@ function multiplePies(cityData, transitMetadata) {
             var localtransitTimes = [];
 
             for (j=0; j<transitMetadata.length; j++){
-                localtransitTimes.push(d.transitTypes[transitMetadata[j].transitType].overallAverageTime);
+                localtransitTimes.push(d.values[1].transitTypes[transitMetadata[j].transitType].overallAverageTime);
                 //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
             }
             //console.log('localCommute '+ [localCommuteData]);
@@ -252,9 +273,9 @@ function multiplePies(cityData, transitMetadata) {
         .attr('class','bar')
         .attr('x', -40) //use negative of 1/2 bar width to center in containing group
         .attr('y', function(d,i){
-            //console.log();
+            //console.log(nestedCitiesName[i].values[1]);
 //**********Grabbing the wrong values - bound to an extracted array, so no way to get index for nested array to read overallAverageTime directly - bind differently?
-            return scaleY(nestedCities[1].values[i].transitTypes.totalCommute.overallAverageTime)
+            return scaleY(nestedCitiesName[i].values[1].transitTypes.totalCommute.overallAverageTime)
         })
         .attr('width',80)
         .attr('height',3)
@@ -1989,3 +2010,13 @@ function lineChart(csvData){
 }
 
     */
+
+/*
+ //Nest data array to create separate arrays for cities and metro areas. Use type attribute to sort.
+ var nestedCities = d3.nest()
+ .key(function (d) {
+ return d.type
+ })
+ .entries(cityData.data);
+ //console.log(nestedCities);
+ */
