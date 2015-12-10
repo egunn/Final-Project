@@ -96,11 +96,13 @@ queue()
             'Average commute time',
             'Number of commuters',
             'Distribution of commute times',
-            'Metro area commuters'
+            'Metro area commuters',
+            'Commute by transit type',
+            'Average time by transit type'
         ];
 
-        var transitionTime = 400;
-
+        var transitionTime = 1000;
+        var durationTime = 300;
 //////////////////////////////development area
 
 
@@ -122,10 +124,10 @@ queue()
                 var mode = d3.select(this).attr('id');
                 console.log(mode);
                 if (mode == 'btn-1') {
-                    averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata,transitionTime);
+                    averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata,transitionTime, durationTime);
                 }
                 else if (mode == 'btn-2') {
-                    commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitionTime);
+                    commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitionTime, durationTime);
                 }
 
                 else if (mode == 'btn-3') {
@@ -159,11 +161,15 @@ queue()
 //function dataLoaded(err,geoData,pieData){
 //}
 
-function averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime){
+function averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime, durationTime){
 
     plot.selectAll("*").remove();
 
-    var narration = plot.append('text')
+    allLabels = plot
+        .append('g')
+        .attr('class', 'labels-group');
+
+    var narration = allLabels.append('text')
         .attr('class','narrate-text')
         .text(function(d,i){
             return (narrativeText[0])
@@ -173,7 +179,7 @@ function averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, tran
             return 'translate('+width/2+ ',' + scaleY(75) + ')'})
         .attr('text-anchor', 'middle')
         .attr('font-size', '18px')
-        .style('fill', 'rgb(215,215,215');
+        .style('fill', 'rgb(200,200,200');
 
     //create 10 groups bound to the city names
     var popCircles = plot.selectAll('.city-metro-groups')
@@ -211,33 +217,33 @@ function averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, tran
             //console.log(timeMetadata[i].timeNumber);
             return 'translate('+0+ ',' + scaleY(65) + ')'})
         .attr('font-size', '6px')
-        .style('fill', 'rgb(215,215,215)');
+        .style('fill', 'rgb(200,200,200)');
 
-    cityLabels.transition().delay(1.8*transitionTime).duration(400)
+    cityLabels.transition().delay(1.8*transitionTime).duration(.1*durationTime)
         .attr('transform',function(d,i){
             //console.log(timeMetadata[i].timeNumber);
             return 'translate('+0+ ',' + scaleY(85) + ')'});
 
-    narration.transition().delay(2.3*transitionTime).duration(400)
+    narration.transition().delay(2.3*transitionTime).duration(.7*durationTime)
         .text(function(d,i){
             return (narrativeText[1])
         })
-        .style('fill', 'green');
+        .style('fill', 'rgb(95,188,211)'); //44,90,160
 
     popCircles = cityPopCircles.append('circle')
         .attr('class','city-population-circle')
         .attr('cx', 0) //function (d, i) {return i * width / 10 + width / 10            })
         .attr('cy', height/2+50)
-        .attr('r', 0)
-        .style('fill', 'green');
+        .attr('r', 0);
+        //.style('fill', 'green');
     //.attr('transform', function(d,i){return 'translate(' + 0 + ',' + scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime) + ')' });
 
-    popCircles.transition().delay(2.5*transitionTime).duration(500)
+    popCircles.transition().delay(2.5*transitionTime).duration(.5*durationTime)
         .attr('r', function (d, i) {
             return scaleR(d.values[1].population)
         });
 
-    popCircles.transition().delay(3.5*transitionTime).duration(400)
+    popCircles.transition().delay(3.5*transitionTime).duration(.4*durationTime)
         .attr('cy', function (d, i) {
             return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
         });
@@ -251,11 +257,11 @@ function averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, tran
         .attr('x2', 0)
         .attr('y2', function (d, i) {
             return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
-        })
-        .style('stroke', 'blue')
-        .style('stroke-weight', '4px');
+        });
+        //.style('stroke', 'rgb(22,45,80)')
+        //.style('stroke-weight', '4px');
 
-    averageLine.transition().delay(4*transitionTime).duration(400)
+    averageLine.transition().delay(4*transitionTime).duration(.4*durationTime)
         .attr('x1', function (d, i) {
             return (-7-(scaleR(d.values[1].population))); //(i * width / 10 + width / 10) - 7 - (scaleR(d.values[1].population))
         })
@@ -263,13 +269,13 @@ function averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, tran
             return (7+  (scaleR(d.values[1].population)));//(i * width / 10 + width / 10) + 7 + (scaleR(d.values[1].population))
         });
 
-    narration.transition().delay(4*transitionTime).duration(400)
+    narration.transition().delay(4*transitionTime).duration(.4*durationTime)
         .text(function(d,i){
             return (narrativeText[2])
         })
-        .style('fill', 'blue');
+        .style('fill', 'rgb(11,34,40)');
 
-    var axisLabels = plot.selectAll('.axisLabels')
+    var axisLabels = allLabels.selectAll('.labels-group')
         .data(timeMetadata)
         .enter()
         .append('text')
@@ -284,28 +290,27 @@ function averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, tran
         .attr('font-size', '12px')
         .style('fill', 'white');
 
-    axisLabels.transition().delay(4*transitionTime).duration(400)
-        .style('fill', 'rgb(215,215,215)');
+    axisLabels.transition().delay(4*transitionTime).duration(.4*durationTime)
+        .style('fill', 'rgb(200,200,200)');
 
-    commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime)
+    commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime, durationTime)
 
 }
 
 
-function commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime){
+function commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime, durationTime){
+
+    //averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata,2, 2);
+
     dashCircle = cityPopCircles.append('circle')
         .attr('class','city-commuter-pop')
         .attr('cx', 0) //function (d, i) {                return i * width / 10 + width / 10            })
         .attr('cy', function (d, i) {
             return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime);
         })
-        .attr('r', 0)
-        .style('fill', 'none')
-        .style('stroke', 'red')
-        .style('stroke-width', '2px')
-        .style('stroke-dasharray', '5px 5px');
+        .attr('r', 0);
 
-    dashCircle.transition().delay(5.5*transitionTime).duration(400)
+    dashCircle.transition().delay(5.5*transitionTime).duration(.4*durationTime)
         .attr('r',function (d, i) {
             //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
             //console.log(d.transitTypes.totalCommute.totalCount);
@@ -314,11 +319,11 @@ function commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText,
 
     var narration = plot.selectAll('.narrate-text');
 
-    narration.transition().delay(5.5*transitionTime).duration(400)
+    narration.transition().delay(5.5*transitionTime).duration(.4*durationTime)
         .text(function(d,i){
             return (narrativeText[3])
         })
-        .style('fill', 'red');
+        .style('fill', 'rgb(38,122,142)');
 
     cityCommuteCircles = cityPopCircles
         .append('g')
@@ -351,10 +356,10 @@ function commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText,
         //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
         // return scaleY([timeMetadata[i].timeNumber]);
         //})
-        .attr('r', 0)//function(d,i){return scaleR(d)})
-        .style('fill','red');
+        .attr('r', 0); //function(d,i){return scaleR(d)})
+        //.style('fill','rgb(38,122,142)');
 
-    cityCircles.transition().delay(7.5*transitionTime).duration(800)
+    cityCircles.transition().delay(7.5*transitionTime).duration(.8*durationTime)
         .attr('cy',function (d, i) {
             //for(j=0; j<timeMetadata.length; j++) {
             // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
@@ -365,20 +370,20 @@ function commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText,
         })
         .attr('r',function(d,i){return scaleR(d)});
 
-    narration.transition().delay(7.5*transitionTime).duration(400)
+    narration.transition().delay(7.5*transitionTime).duration(.4*durationTime)
         .text(function(d,i){
             return (narrativeText[4])
         })
         .attr('transform',function(d,i){
             //console.log(timeMetadata[i].timeNumber);
             return 'translate('+width/2+ ',' + scaleY(75) + ')'})
-        .style('fill', 'red');
+        .style('fill', 'rgb(38,122,142)');
 
-    metroCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime)
+    metroCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime, durationTime)
 
 }
 
-function metroCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime){
+function metroCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime, durationTime){
     metroCommuteCircles = metroPopCircles
         .append('g')
         .attr('class','metro-commute-circles');
@@ -406,25 +411,25 @@ function metroCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transi
             //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
             return scaleY([timeMetadata[i].timeNumber]);
         })
-        .attr('r',0)
-        .style('fill','none')
-        .style('stroke', 'purple');
+        .attr('r',0);
+        //.style('fill','none');
+        //.style('stroke', 'purple');
 
-    metroCircles.transition().delay(8.5*transitionTime).duration(400)
+    metroCircles.transition().delay(8.5*transitionTime).duration(.4*durationTime)
         .attr('r',function(d,i){return scaleR(d)});
 
     var narration = plot.selectAll('.narrate-text');
 
-    narration.transition().delay(8.5*transitionTime).duration(400)
+    narration.transition().delay(9*transitionTime).duration(.4*durationTime)
         .text(function(d,i){
             return (narrativeText[5])
         })
-        .style('fill', 'purple');
+        .style('fill', 'rgb(175,221,233)');
 
-    commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime)
+    commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime, durationTime)
 }
 
-function  commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime) {
+function  commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime, durationTime) {
 
     //plot.selectAll("*").remove();
 
@@ -585,26 +590,39 @@ function  commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadat
 //***********Should be able to combine these transitions - assign multiple classes, or figure out how to select multiple classes at once (assign is ('class', 'class1 class2') - Wk 7 Ex3
     popBubbles = plot.selectAll('.city-population-circle');
 
-    popBubbles.transition().delay(14*transitionTime).duration(300)
+    popBubbles.transition().delay(14*transitionTime).duration(.5*durationTime)
         .attr('r',0);
 
     commuterPopBubbles = plot.selectAll('.city-commuter-pop');
 
-    commuterPopBubbles.transition().delay(14*transitionTime).duration(300)
+    commuterPopBubbles.transition().delay(14*transitionTime).duration(.5*durationTime)
         .attr('r',0);
 
-    pieCharts.transition().delay(16*transitionTime).duration(300)
+    pieCharts.transition().delay(16*transitionTime).duration(.5*durationTime)
         .attr('d', arcGenerator); //create geometry of path;
 
     averageLine = plot.selectAll('.average-line');
 
-    averageLine.transition().delay(16*transitionTime).duration(300)
-        .attr('x1',-47)
-        .attr('x2',47);
+    averageLine.transition().delay(16*transitionTime).duration(.5*durationTime)
+        .attr('x1',-49)
+        .attr('x2',49);
+
+
+    var narration = plot.selectAll('.narrate-text');
+
+    narration.transition().delay(17*transitionTime).duration(.4*durationTime)
+        .text(function(d,i){
+            return (narrativeText[6])
+        })
+        .style('fill', 'darkcyan');
+
+
 
     var transitLabelText = ['Bus', 'Carpool', 'Drove alone', 'Rail or Ferry', 'Streetcar', 'Taxi', 'Walked'];
 
-    var transitLabels = plot.selectAll('.transitLabels')
+    allLabels = plot.selectAll('.labels-group');
+
+    var transitLabels = allLabels.selectAll('.transit-labels')  //allLabels.selectAll('.labels-group')
         .data(transitLabelText)
         .enter()
         .append('text')
@@ -621,17 +639,17 @@ function  commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadat
         .attr('font-size', '14px')
         .style('fill', 'white');
 
-    transitLabels.transition().delay(16*transitionTime).duration(300)
+    transitLabels.transition().delay(16*transitionTime).duration(.5*durationTime)
         .style('fill', function(d,i){
             return scalePieColor(i)
         });
 
-    commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime)
+    commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime, durationTime)
 
 }
 
 
-function commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime) {
+function commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime, durationTime) {
 
     var cityTransitTypes = plot.selectAll('.city-transit-types');
 
@@ -674,23 +692,37 @@ function commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata
             return scalePieColor(i)
         });
 
-    transitBars.transition().delay(18*transitionTime).duration(500)
+    transitBars.transition().delay(18*transitionTime).duration(.5*durationTime)
         .attr('x',-40)
         .attr('width', 80);
 
-    transitBars.transition().delay(19*transitionTime).duration(2000)
+    transitBars.transition().delay(19*transitionTime).duration(.5*durationTime)
         .attr('y', function(d,i){
             return scaleY(d.transitAverages);
         });
 
     var transitLabels = plot.selectAll('.transit-labels');
 
-    transitLabels.transition().delay(22*transitionTime).duration(500)
+    transitLabels.transition().delay(19*transitionTime).duration(.5*durationTime)
         .attr('transform',function(d,i){
              return 'translate('+((10.5*width/10.5))+ ',' + scaleY(nestedCitiesName[9].values[1].transitTypes[transitMetadata[i].transitType].overallAverageTime - 1) + ')'
         });
 
 
+    var narration = plot.selectAll('.narrate-text');
+
+    narration.transition().delay(17*transitionTime).duration(.4*durationTime)
+        .text(function(d,i){
+            return (narrativeText[7])
+        })
+        .style('fill', 'rgb(200,200,200)');
+
+
+    //a pointless transition on an already-hidden item - this is used only to make sure that reducing the transition time doesn't cut off the duration times for the last few animations
+    var endTimer = plot.selectAll('.city-population-circle');
+
+    endTimer.transition().delay(30000).duration(1000)
+        .attr('r',0);
 
 }
 

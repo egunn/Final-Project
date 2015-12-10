@@ -54,6 +54,28 @@ p{
 .activity-2:hover path{
     fill-opacity:1;
 }
-.activity-2:hover text;{
+.activity-2:hover text{
     fill-opacity:1;
+}
+.city-population-circle{
+		fill:rgb(95,188,211)
+}
+.average-line{
+	stroke:rgb(11,34,40);
+	stroke-width:1px;
+}
+.city-commuter-pop{
+	fill:none;
+	stroke:rgb(38,122,142);
+	stroke-width:2px;
+	stroke-dasharray:5px 5px;
+}
+
+.city-commute-circle{
+	fill:rgb(38,122,142);
+}
+
+.metro-commute-circles{
+	fill:none;
+	stroke:rgb(175,221,233);
 }
