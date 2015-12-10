@@ -40,7 +40,6 @@ var axisY = d3.svg.axis()
 var commuteTime = d3.map();
 var timeLookup = d3.map();
 var transitColorLookup = d3.map();
-var transitColorLookup = d3.map();
 
 queue()
     //load files
@@ -83,6 +82,23 @@ queue()
 
         //console.log(transitColorLookup);
 
+        //Nest data array by city name, so that there are two subarrays containing data by type (metro/city)
+        var nestedCitiesName = d3.nest()
+            .key(function (d) {
+                return d.name
+            })
+            .entries(cityData.data);
+        console.log(nestedCitiesName);
+
+        var narrativeText = [
+            '10 cities with the worst commutes',
+            'City population',
+            'Average commute time',
+            'Number of commuters',
+            'Distribution of commute times',
+            'Metro area commuters'
+        ];
+
 //////////////////////////////development area
 
 
@@ -104,10 +120,10 @@ queue()
                 var mode = d3.select(this).attr('id');
                 console.log(mode);
                 if (mode == 'btn-1') {
-                    console.log('no function!');
+                    averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata);
                 }
                 else if (mode == 'btn-2') {
-                    console.log('no function!');
+                    commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText);
                 }
 
                 else if (mode == 'btn-3') {
@@ -123,11 +139,11 @@ queue()
                 }
 
                 else if (mode == 'btn-6') {
-                    cityMetroBubbles(cityData,timeMetadata);
+                    cityMetroBubbles(nestedCitiesName,timeMetadata);
                 }
 
                 else if (mode == 'btn-7') {
-                    multiplePies(cityData, transitMetadata, timeMetadata);
+                    multiplePies(nestedCitiesName, transitMetadata, timeMetadata);
                 }
 
                 else {
@@ -141,18 +157,764 @@ queue()
 //function dataLoaded(err,geoData,pieData){
 //}
 
+function averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata){
 
-function multiplePies(cityData, transitMetadata, timeMetadata) {
     plot.selectAll("*").remove();
 
-     //Nest data array by city name, so that there are two subarrays containing data by type (metro/city)
-    var nestedCitiesName = d3.nest()
-        .key(function (d) {
-            return d.name
+    var narration = plot.append('text')
+        .attr('class','narrate-text')
+        .text(function(d,i){
+            return (narrativeText[0])
         })
-        .entries(cityData.data);
-    console.log(nestedCitiesName);
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+width/2+ ',' + scaleY(75) + ')'})
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '18px')
+        .style('fill', 'rgb(215,215,215');
 
+    //create 10 groups bound to the city names
+    var popCircles = plot.selectAll('.city-metro-groups')
+        .data(nestedCitiesName)
+        .enter()
+        .append('g')
+        .attr('class', 'city-metro-group')
+        .attr('transform', function(d,i){
+            return 'translate('+ ((i * width / 10) + width / 10) + ',' + 0 + ')'
+        });
+
+    //Create groups to put city-specific and metro-specific data in
+    cityPopCircles = popCircles
+        .append('g')
+        .attr('class', 'city-population-group');
+
+    metroPopCircles = popCircles
+        .append('g')
+        .attr('class', 'metro-population-group');
+
+    cityPopCircles.selectAll('city-population-circles')
+        .data(nestedCitiesName) //duplicated DC city data for metro - otherwise, returns an error b/c only one array element!
+        .enter();
+
+    cityLabels = cityPopCircles.append('text')
+        .text(function (d, i) {
+            return d.key;
+        })//retrieve city label from rows array, use as text
+        //.attr('x', function (d, i) {
+        //    return i * width / 10 + width / 10
+        //})
+        .attr('class', 'label')
+        .attr('text-anchor', 'middle')
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+0+ ',' + scaleY(65) + ')'})
+        .attr('font-size', '6px')
+        .style('fill', 'rgb(215,215,215)');
+
+    cityLabels.transition().delay(1800).duration(400)
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+0+ ',' + scaleY(85) + ')'});
+
+    narration.transition().delay(2300).duration(400)
+        .text(function(d,i){
+            return (narrativeText[1])
+        })
+        .style('fill', 'green');
+
+    popCircles = cityPopCircles.append('circle')
+        .attr('cx', 0) //function (d, i) {return i * width / 10 + width / 10            })
+        .attr('cy', height/2+50)
+        .attr('r', 0)
+        .style('fill', 'green');
+    //.attr('transform', function(d,i){return 'translate(' + 0 + ',' + scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime) + ')' });
+
+    popCircles.transition().delay(2500).duration(500)
+        .attr('r', function (d, i) {
+            return scaleR(d.values[1].population)
+        });
+
+    popCircles.transition().delay(3500).duration(400)
+        .attr('cy', function (d, i) {
+            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
+        });
+
+    averageLine = cityPopCircles.append('line')
+        .attr('x1',0)
+        .attr('y1', function (d, i) {
+            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
+        })
+        .attr('x2', 0)
+        .attr('y2', function (d, i) {
+            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
+        })
+        .style('stroke', 'blue')
+        .style('stroke-weight', '4px');
+
+    averageLine.transition().delay(4000).duration(400)
+        .attr('x1', function (d, i) {
+            return (-7-(scaleR(d.values[1].population))); //(i * width / 10 + width / 10) - 7 - (scaleR(d.values[1].population))
+        })
+        .attr('x2', function (d, i) {
+            return (7+  (scaleR(d.values[1].population)));//(i * width / 10 + width / 10) + 7 + (scaleR(d.values[1].population))
+        });
+
+    narration.transition().delay(4000).duration(400)
+        .text(function(d,i){
+            return (narrativeText[2])
+        })
+        .style('fill', 'blue');
+
+    var axisLabels = plot.selectAll('.axisLabels')
+        .data(timeMetadata)
+        .enter()
+        .append('text')
+        .attr('class','axis-labels')
+        .text(function(d,i){
+            return (timeMetadata[i].timeNumber + ' mins')
+        })
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+0+ ',' + scaleY(timeMetadata[i].timeNumber) + ')'})
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '12px')
+        .style('fill', 'white');
+
+    axisLabels.transition().delay(4000).duration(400)
+        .style('fill', 'rgb(215,215,215)');
+
+    commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata)
+
+}
+
+
+function commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata){
+    dashCircle = cityPopCircles.append('circle')
+        .attr('class','city-commuter-pop')
+        .attr('cx', 0) //function (d, i) {                return i * width / 10 + width / 10            })
+        .attr('cy', function (d, i) {
+            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime);
+        })
+        .attr('r', 0)
+        .style('fill', 'none')
+        .style('stroke', 'red')
+        .style('stroke-width', '2px')
+        .style('stroke-dasharray', '5px 5px');
+
+    dashCircle.transition().delay(5500).duration(400)
+        .attr('r',function (d, i) {
+            //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
+            //console.log(d.transitTypes.totalCommute.totalCount);
+            return scaleR(d.values[1].transitTypes.totalCommute.totalCount);
+        });
+
+    var narration = plot.selectAll('.narrate-text');
+
+    narration.transition().delay(5500).duration(400)
+        .text(function(d,i){
+            return (narrativeText[3])
+        })
+        .style('fill', 'red');
+
+    cityCommuteCircles = cityPopCircles
+        .append('g')
+        .attr('class','city-commute-circles');
+    //.attr();  //translate to match scale for population circles!!
+
+    cityCircles = cityCommuteCircles.selectAll('.city-commute-circles')
+        .data(function(d,i){
+            var localCommuteIntervals = [];
+
+            for (j=0; j<timeMetadata.length; j++){
+                localCommuteIntervals.push(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+                //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
+            }
+
+            return localCommuteIntervals;
+        })//nestedDataName gives me 10 circles, one for each city - not what I want here! Need 9 circles, one for each entry in the timeMetadata array
+        .enter()
+        .append('circle')
+        .attr('class','city-commute-circle')
+        .attr('cx',0)
+        .attr('cy',function (d, i) {
+            //console.log(nestedCitiesName[i].values[1].transitTypes.totalCommute.overallAverageTime)
+            return scaleY(nestedCitiesName[i].values[1].transitTypes.totalCommute.overallAverageTime);
+        })//function (d, i) {
+        //for(j=0; j<timeMetadata.length; j++) {
+        // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+        //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
+        //}
+        //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
+        // return scaleY([timeMetadata[i].timeNumber]);
+        //})
+        .attr('r', 0)//function(d,i){return scaleR(d)})
+        .style('fill','red');
+
+    cityCircles.transition().delay(7500).duration(800)
+        .attr('cy',function (d, i) {
+            //for(j=0; j<timeMetadata.length; j++) {
+            // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+            //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
+            //}
+            //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
+            return scaleY([timeMetadata[i].timeNumber]);
+        })
+        .attr('r',function(d,i){return scaleR(d)});
+
+    narration.transition().delay(7500).duration(400)
+        .text(function(d,i){
+            return (narrativeText[4])
+        })
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+width/2+ ',' + scaleY(75) + ')'})
+        .style('fill', 'red');
+
+    metroCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata)
+
+}
+
+function metroCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata){
+    metroCommuteCircles = metroPopCircles
+        .append('g')
+        .attr('class','metro-commute-circles');
+
+    metroCircles = metroCommuteCircles.selectAll('.metro-commute-circles')
+        .data(function(d,i){
+            var localCommuteIntervals = [];
+
+            for (j=0; j<timeMetadata.length; j++){
+                localCommuteIntervals.push(d.values[0].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+                //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
+            }
+
+            return localCommuteIntervals;
+        })//nestedDataName gives me 10 circles, one for each city - not what I want here! Need 9 circles, one for each entry in the timeMetadata array
+        .enter()
+        .append('circle')
+        .attr('class','metro-commute-circle')
+        .attr('cx',0)
+        .attr('cy',function (d, i) {
+            //for(j=0; j<timeMetadata.length; j++) {
+            // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+            //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
+            //}
+            //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
+            return scaleY([timeMetadata[i].timeNumber]);
+        })
+        .attr('r',0)
+        .style('fill','none')
+        .style('stroke', 'purple');
+
+    metroCircles.transition().delay(11000).duration(400)
+        .attr('r',function(d,i){return scaleR(d)});
+
+    var narration = plot.selectAll('.narrate-text');
+
+    narration.transition().delay(11000).duration(400)
+        .text(function(d,i){
+            return (narrativeText[5])
+        })
+        .style('fill', 'purple');
+
+    commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadata)
+}
+
+function  commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadata) {
+
+    //plot.selectAll("*").remove();
+
+    //Based on In-Class 9-Ex 2
+    var percentPieData = [];
+
+    //Layout function - creates angles needed to create pie charts using data
+    var pieLayout = d3.layout.pie();   //need to tell it which dataset to use
+
+    var beginArcGenerator = d3.svg.arc()
+        //.startAngle()  //already stored in data w/ correct name by pieLayout function.
+        //.endAngle()
+        .innerRadius(0)
+        .outerRadius(0);
+
+    var arcGenerator = d3.svg.arc()
+        //.startAngle()  //already stored in data w/ correct name by pieLayout function.
+        //.endAngle()
+        .innerRadius(0)
+        .outerRadius(35);
+
+  /*  var axisLabels = plot.selectAll('.axisLabels')
+        .data(timeMetadata)
+        .enter()
+        .append('text')
+        .attr('class','axis-labels')
+        .text(function(d,i){
+            return (timeMetadata[i].timeNumber + ' mins')
+        })
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+0+ ',' + scaleY(timeMetadata[i].timeNumber) + ')'})
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '12px')
+        .style('fill', 'rgb(215,215,215)');*/
+
+    var cityTransitTypes = plot.selectAll('.transit-types')
+        .data(function(d,i){
+            //console.log(nestedCitiesName[i].values[1]);
+            return nestedCitiesName})
+        .enter()
+        .append('g')
+        .attr('class', 'city-transit-types');
+    //.attr('transform', function(d,i){return 'translate(' + ((i * width / 10) + width / 10) + ',' + height / 2 + ')'});
+
+/*    cityTransitTypes
+        .append('text')
+        .text(function(d,i){
+            //console.log(d.values);
+            return d.key}) //.attr('r', function(d,i){return scaleR(nestedCities[1].values[i].population)})
+        .attr('class', 'label')
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '6px')
+        .style('fill', 'rgb(215,215,215)')
+//********Fix height to match other function!!!
+        .attr('transform', function(d,i){return 'translate('+ ((i * width / 10) + width / 10) + ',' + height / 15 + ')'});
+*/
+
+/*    cityTransitTypes.append('line')
+        .attr('x1',function(d,i){return ((i * width / 10) + width / 10)-47})
+        .attr('y1',function(d,i){return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)})
+        .attr('x2',function(d,i){return ((i * width / 10) + width / 10)+47})
+        .attr('y2',function(d,i){return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)})
+        .style('stroke','blue')
+        .style('stroke-weight','4px');
+        */
+
+    //create a pie chart for each bound data object, using the transitTypes attribute (show percent bus, carpool, drive, etc)
+    cityPies = cityTransitTypes
+        .append('g')
+        .attr('class','transit-pie-chart')
+        .attr('transform', function(d,i){return 'translate(' + ((i * width / 10) + width / 10) + ',' + scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime) + ')' });
+
+
+    pieCharts = cityPies.selectAll('.transit-pie-chart')//.append('g')
+        .data(function(d,i) {
+            //may not need to use lookup table in this way (though it may help with color constancy) - getting the same error with the for loop that returns an array
+            //as I got with the direct indexing of nestedCities.
+            var localCommuteData = [];
+
+            for (j=0; j<transitMetadata.length; j++){
+                //console.log(d.values[1].transitTypes.totalCommute.totalCount);
+                localCommuteData.push(d.values[1].transitTypes[transitMetadata[j].transitType].totalCount/d.values[1].transitTypes.totalCommute.totalCount*100);
+                //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
+            }
+            //console.log('localCommute '+ [localCommuteData]);
+            //console.log(pieLayout(localCommuteData));
+            return pieLayout(localCommuteData);
+        })
+        .enter()
+        .append('path')
+        .attr('class', 'slice')
+        .attr('d', beginArcGenerator) //create geometry of path
+        .style('fill', function (d, i) {
+            return scalePieColor(i);
+        });
+
+    metroBubbles = plot.selectAll('.metro-commute-circle');
+    metroBubbles.transition().delay(17000)
+        .attr('r',0);
+
+    commuteBubbles = plot.selectAll('.city-commute-circle');
+
+    commuteBubbles.transition().delay(18000)
+        .attr('cy',function(d,i){
+            console.log(i);
+            if (i<9){
+               return  scaleY(nestedCitiesName[0].values[1].transitTypes.totalCommute.overallAverageTime);
+            }
+            else if (i<18){
+                console.log('9<18');
+                return  scaleY(nestedCitiesName[1].values[1].transitTypes.totalCommute.overallAverageTime);
+            }
+            else if (i<27){
+                return  scaleY(nestedCitiesName[2].values[1].transitTypes.totalCommute.overallAverageTime);
+            }
+            else if (i<36){
+                console.log('27<36');
+                return  scaleY(nestedCitiesName[3].values[1].transitTypes.totalCommute.overallAverageTime);
+            }
+            else if (i<45){
+                console.log('36<45');
+                return  scaleY(nestedCitiesName[4].values[1].transitTypes.totalCommute.overallAverageTime);
+            }
+            else if (i<54){
+                return  scaleY(nestedCitiesName[5].values[1].transitTypes.totalCommute.overallAverageTime);
+            }
+            else if (i<63){
+                return  scaleY(nestedCitiesName[6].values[1].transitTypes.totalCommute.overallAverageTime);
+            }
+            else if (i<72){
+                return  scaleY(nestedCitiesName[7].values[1].transitTypes.totalCommute.overallAverageTime);
+            }
+            else if (i<81) {
+                return scaleY(nestedCitiesName[8].values[1].transitTypes.totalCommute.overallAverageTime);
+            }
+            else if (i<90){
+                return  scaleY(nestedCitiesName[9].values[1].transitTypes.totalCommute.overallAverageTime);
+            }
+
+        });//function (d, i) {
+
+           // console.log(nestedCitiesName[1].values[1].transitTypes.totalCommute.overallAverageTime);
+            //scaleY(nestedCitiesName[1].values[1].transitTypes.totalCommute.overallAverageTime));
+
+            /*tempAverages = [];
+
+            for (k=0; k<nestedCitiesName.length; k++){
+                //console.log(nestedCitiesName.length);
+                tempAverages.push(scaleY(nestedCitiesName[1].values[1].transitTypes.totalCommute.overallAverageTime));
+
+            }
+            return tempAverages;*/
+        //});
+
+
+    commuteBubbles.transition().delay(20000).attr('r',0);
+
+    pieCharts.transition().delay(25000).duration(300)
+        .attr('d', arcGenerator); //create geometry of path;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function cityMetroBubbles(nestedCitiesName,timeMetadata) {
+
+    plot.selectAll("*").remove();
+
+    var narrativeText = [
+        '10 cities with the worst commutes',
+        'City population',
+        'Average commute time',
+        'Number of commuters',
+        'Distribution of commute times',
+        'Metro area commuters'
+    ];
+
+    var narration = plot.append('text')
+        .attr('class','narrate-text')
+        .text(function(d,i){
+            return (narrativeText[0])
+        })
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+width/2+ ',' + scaleY(75) + ')'})
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '18px')
+        .style('fill', 'rgb(215,215,215');
+
+    //create 10 groups bound to the city names
+    var popCircles = plot.selectAll('.city-metro-groups')
+        .data(nestedCitiesName)
+        .enter()
+        .append('g')
+        .attr('class', 'city-metro-group')
+        .attr('transform', function(d,i){
+            return 'translate('+ ((i * width / 10) + width / 10) + ',' + 0 + ')'
+        });
+
+    //Create groups to put city-specific and metro-specific data in
+    cityPopCircles = popCircles
+        .append('g')
+        .attr('class', 'city-population-group');
+
+    metroPopCircles = popCircles
+        .append('g')
+        .attr('class', 'metro-population-group');
+
+    cityPopCircles.selectAll('city-population-circles')
+        .data(nestedCitiesName) //duplicated DC city data for metro - otherwise, returns an error b/c only one array element!
+        .enter();
+
+    cityLabels = cityPopCircles.append('text')
+        .text(function (d, i) {
+            return d.key;
+        })//retrieve city label from rows array, use as text
+        //.attr('x', function (d, i) {
+        //    return i * width / 10 + width / 10
+        //})
+        .attr('class', 'label')
+        .attr('text-anchor', 'middle')
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+0+ ',' + scaleY(65) + ')'})
+        .attr('font-size', '6px')
+        .style('fill', 'rgb(215,215,215)');
+
+    cityLabels.transition().delay(1800).duration(400)
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+0+ ',' + scaleY(85) + ')'});
+
+    narration.transition().delay(2300).duration(400)
+        .text(function(d,i){
+            return (narrativeText[1])
+        })
+        .style('fill', 'green');
+
+    popCircles = cityPopCircles.append('circle')
+        .attr('cx', 0) //function (d, i) {return i * width / 10 + width / 10            })
+        .attr('cy', height/2+50)
+        .attr('r', 0)
+        .style('fill', 'green');
+    //.attr('transform', function(d,i){return 'translate(' + 0 + ',' + scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime) + ')' });
+
+    popCircles.transition().delay(2500).duration(500)
+        .attr('r', function (d, i) {
+            return scaleR(d.values[1].population)
+        });
+
+    popCircles.transition().delay(3500).duration(400)
+        .attr('cy', function (d, i) {
+            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
+        });
+
+    averageLine = cityPopCircles.append('line')
+        .attr('x1',0)
+        .attr('y1', function (d, i) {
+            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
+        })
+        .attr('x2', 0)
+        .attr('y2', function (d, i) {
+            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
+        })
+        .style('stroke', 'blue')
+        .style('stroke-weight', '4px');
+
+    averageLine.transition().delay(4000).duration(400)
+        .attr('x1', function (d, i) {
+            return (-7-(scaleR(d.values[1].population))); //(i * width / 10 + width / 10) - 7 - (scaleR(d.values[1].population))
+        })
+        .attr('x2', function (d, i) {
+            return (7+  (scaleR(d.values[1].population)));//(i * width / 10 + width / 10) + 7 + (scaleR(d.values[1].population))
+        });
+
+    narration.transition().delay(4000).duration(400)
+        .text(function(d,i){
+            return (narrativeText[2])
+        })
+        .style('fill', 'blue');
+
+    var axisLabels = plot.selectAll('.axisLabels')
+        .data(timeMetadata)
+        .enter()
+        .append('text')
+        .attr('class','axis-labels')
+        .text(function(d,i){
+            return (timeMetadata[i].timeNumber + ' mins')
+        })
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+0+ ',' + scaleY(timeMetadata[i].timeNumber) + ')'})
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '12px')
+        .style('fill', 'white');
+
+    axisLabels.transition().delay(4000).duration(400)
+        .style('fill', 'rgb(215,215,215)');
+
+
+    dashCircle = cityPopCircles.append('circle')
+        .attr('class','city-commuter-pop')
+        .attr('cx', 0) //function (d, i) {                return i * width / 10 + width / 10            })
+        .attr('cy', function (d, i) {
+            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime);
+        })
+        .attr('r', 0)
+        .style('fill', 'none')
+        .style('stroke', 'red')
+        .style('stroke-width', '2px')
+        .style('stroke-dasharray', '5px 5px');
+
+    dashCircle.transition().delay(5500).duration(400)
+        .attr('r',function (d, i) {
+            //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
+            //console.log(d.transitTypes.totalCommute.totalCount);
+            return scaleR(d.values[1].transitTypes.totalCommute.totalCount);
+        });
+
+    narration.transition().delay(5500).duration(400)
+        .text(function(d,i){
+            return (narrativeText[3])
+        })
+        .style('fill', 'red');
+
+    cityCommuteCircles = cityPopCircles
+        .append('g')
+        .attr('class','city-commute-circles');
+    //.attr();  //translate to match scale for population circles!!
+
+    cityCircles = cityCommuteCircles.selectAll('.city-commute-circles')
+        .data(function(d,i){
+            var localCommuteIntervals = [];
+
+            for (j=0; j<timeMetadata.length; j++){
+                localCommuteIntervals.push(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+                //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
+            }
+
+            return localCommuteIntervals;
+        })//nestedDataName gives me 10 circles, one for each city - not what I want here! Need 9 circles, one for each entry in the timeMetadata array
+        .enter()
+        .append('circle')
+        .attr('class','city-commute-circle')
+        .attr('cx',0)
+        .attr('cy',function (d, i) {
+            //console.log(nestedCitiesName[i].values[1].transitTypes.totalCommute.overallAverageTime)
+            return scaleY(nestedCitiesName[i].values[1].transitTypes.totalCommute.overallAverageTime);
+        })//function (d, i) {
+        //for(j=0; j<timeMetadata.length; j++) {
+        // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+        //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
+        //}
+        //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
+        // return scaleY([timeMetadata[i].timeNumber]);
+        //})
+        .attr('r', 0)//function(d,i){return scaleR(d)})
+        .style('fill','red');
+
+    cityCircles.transition().delay(7500).duration(800)
+        .attr('cy',function (d, i) {
+            //for(j=0; j<timeMetadata.length; j++) {
+            // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+            //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
+            //}
+            //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
+            return scaleY([timeMetadata[i].timeNumber]);
+        })
+        .attr('r',function(d,i){return scaleR(d)});
+
+    narration.transition().delay(7500).duration(400)
+        .text(function(d,i){
+            return (narrativeText[4])
+        })
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+width/2+ ',' + scaleY(75) + ')'})
+        .style('fill', 'red');
+
+    metroCommuteCircles = metroPopCircles
+        .append('g')
+        .attr('class','metro-commute-circles');
+
+    metroCircles = metroCommuteCircles.selectAll('.metro-commute-circles')
+        .data(function(d,i){
+            var localCommuteIntervals = [];
+
+            for (j=0; j<timeMetadata.length; j++){
+                localCommuteIntervals.push(d.values[0].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+                //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
+            }
+
+            return localCommuteIntervals;
+        })//nestedDataName gives me 10 circles, one for each city - not what I want here! Need 9 circles, one for each entry in the timeMetadata array
+        .enter()
+        .append('circle')
+        .attr('class','city-commute-circle')
+        .attr('cx',0)
+        .attr('cy',function (d, i) {
+            //for(j=0; j<timeMetadata.length; j++) {
+            // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
+            //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
+            //}
+            //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
+            return scaleY([timeMetadata[i].timeNumber]);
+        })
+        .attr('r',0)
+        .style('fill','none')
+        .style('stroke', 'purple');
+
+    metroCircles.transition().delay(11000).duration(400)
+        .attr('r',function(d,i){return scaleR(d)});
+
+    narration.transition().delay(11000).duration(400)
+        .text(function(d,i){
+            return (narrativeText[5])
+        })
+        .style('fill', 'purple');
+
+}
+
+
+
+function multiplePies(nestedCitiesName, transitMetadata, timeMetadata) {
+    //plot.selectAll("*").remove();
 
     //Based on In-Class 9-Ex 2
     var percentPieData = [];
@@ -209,7 +971,7 @@ function multiplePies(cityData, transitMetadata, timeMetadata) {
         .attr('x2',function(d,i){return ((i * width / 10) + width / 10)+47})
         .attr('y2',function(d,i){return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)})
         .style('stroke','blue')
-        .style('stroke-weight','2px');
+        .style('stroke-weight','4px');
 
     //create a pie chart for each bound data object, using the transitTypes attribute (show percent bus, carpool, drive, etc)
     cityPies = cityTransitTypes
@@ -261,7 +1023,7 @@ function multiplePies(cityData, transitMetadata, timeMetadata) {
             var localtransitTimes = [];
 
             for (j=0; j<transitMetadata.length; j++){
-                localtransitTimes.push(d.values[1].transitTypes[transitMetadata[j].transitType].overallAverageTime);
+                localtransitTimes.push({overallAverage:d.values[1].transitTypes.totalCommute.overallAverageTime, transitAverages:d.values[1].transitTypes[transitMetadata[j].transitType].overallAverageTime});
                 //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
             }
             //console.log('localCommute '+ [localCommuteData]);
@@ -271,228 +1033,51 @@ function multiplePies(cityData, transitMetadata, timeMetadata) {
         .enter()
         .append('rect')
         .attr('class','bar')
-        .attr('x', -40) //use negative of 1/2 bar width to center in containing group
+        .attr('x', 1) //use negative of 1/2 bar width to center in containing group
         .attr('y', function(d,i){
             //console.log(nestedCitiesName[i].values[1]);
 //**********Grabbing the wrong values - bound to an extracted array, so no way to get index for nested array to read overallAverageTime directly - bind differently?
-            return scaleY(nestedCitiesName[i].values[1].transitTypes.totalCommute.overallAverageTime)
+            console.log(d.overallAverage);
+            return scaleY(d.overallAverage)-1.5;//nestedCitiesName[i].values[1].transitTypes.totalCommute.overallAverageTime)
         })
-        .attr('width',80)
+        .attr('width',0)
         .attr('height',3)
         .style('fill', function(d,i){
             //checked color order - coming out in order for Detroit
             return scalePieColor(i)
         });
 
-    transitBars.transition().delay(500).duration(300)
+    transitBars.transition().delay(500).duration(500)
+        .attr('x',-40)
+        .attr('width', 80);
+
+    transitBars.transition().delay(1000).duration(2000)
         .attr('y', function(d,i){
-            return scaleY(d);
+            return scaleY(d.transitAverages);
         });
 
-}
+    transitLabelText = ['Bus', 'Carpool', 'Drove alone', 'Rail or Ferry', 'Streetcar', 'Taxi', 'Walked'];
 
-function cityMetroBubbles(cityData,timeMetadata) {
-
-    plot.selectAll("*").remove();
-
-    //Nest data array by city name, so that there are two subarrays containing data by type (metro/city)
-    var nestedCitiesName = d3.nest()
-        .key(function (d) {
-            return d.name
-        })
-        .entries(cityData.data);
-    console.log(nestedCitiesName);
-
-    //create 10 groups bound to the city names
-    var popCircles = plot.selectAll('.city-metro-groups')
-        .data(nestedCitiesName)
-        .enter()
-        .append('g')
-        .attr('class', 'city-metro-group')
-        .attr('transform', function(d,i){
-            return 'translate('+ ((i * width / 10) + width / 10) + ',' + 0 + ')'
-        });
-
-    //Create groups to put city-specific and metro-specific data in
-    cityPopCircles = popCircles
-        .append('g')
-        .attr('class', 'city-population-group');
-
-    metroPopCircles = popCircles
-        .append('g')
-        .attr('class', 'metro-population-group');
-
-    cityPopCircles.selectAll('city-population-circles')
-        .data(nestedCitiesName) //duplicated DC city data for metro - otherwise, returns an error b/c only one array element!
-        .enter();
-
-    popCircles = cityPopCircles.append('circle')
-        .attr('cx', 0) //function (d, i) {return i * width / 10 + width / 10            })
-        .attr('cy', height/2+50)
-        .attr('r', function (d, i) {
-            return scaleR(d.values[1].population)
-        })
-        .style('fill', 'green');
-    //.attr('transform', function(d,i){return 'translate(' + 0 + ',' + scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime) + ')' });
-
-    popCircles.transition().delay(2000).duration(400)
-        .attr('cy', function (d, i) {
-            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
-        });
-
-    averageLine = cityPopCircles.append('line')
-        .attr('x1',0)
-        .attr('y1', function (d, i) {
-            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
-        })
-        .attr('x2', 0)
-        .attr('y2', function (d, i) {
-            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
-        })
-        .style('stroke', 'blue')
-        .style('stroke-weight', '2px');
-
-    averageLine.transition().delay(3000).duration(400)
-        .attr('x1', function (d, i) {
-            return (-7-(scaleR(d.values[1].population))); //(i * width / 10 + width / 10) - 7 - (scaleR(d.values[1].population))
-        })
-        .attr('x2', function (d, i) {
-            return (7+  (scaleR(d.values[1].population)));//(i * width / 10 + width / 10) + 7 + (scaleR(d.values[1].population))
-        });
-
-    var axisLabels = plot.selectAll('.axisLabels')
-        .data(timeMetadata)
+    var transitLabels = plot.selectAll('.transitLabels')
+        .data(transitLabelText)
         .enter()
         .append('text')
-        .attr('class','axis-labels')
+        .attr('class','transit-labels')
         .text(function(d,i){
-            return (timeMetadata[i].timeNumber + ' mins')
+            return (d)
         })
+        //.attr('text-anchor', 'middle')
         .attr('transform',function(d,i){
             //console.log(timeMetadata[i].timeNumber);
-            return 'translate('+0+ ',' + scaleY(timeMetadata[i].timeNumber) + ')'})
-        .attr('text-anchor', 'middle')
-        .attr('font-size', '12px')
-        .style('fill', 'white');
-
-    axisLabels.transition().delay(3500).duration(400)
-        .style('fill', 'rgb(215,215,215)');
-
-    cityPopCircles.append('text')
-        .text(function (d, i) {
-            return d.key;
-        })//retrieve city label from rows array, use as text
-        //.attr('x', function (d, i) {
-        //    return i * width / 10 + width / 10
-        //})
-        .attr('class', 'label')
-        .attr('text-anchor', 'middle')
-        .attr('font-size', '6px')
-        .style('fill', 'rgb(215,215,215)');
-
-    dashCircle = cityPopCircles.append('circle')
-        .attr('class','city-commuter-pop')
-        .attr('cx', 0) //function (d, i) {                return i * width / 10 + width / 10            })
-        .attr('cy', function (d, i) {
-            return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime);
-        })
-        .attr('r', 0)
-        .style('fill', 'none')
-        .style('stroke', 'red')
-        .style('stroke-width', '2px')
-        .style('stroke-dasharray', '5px 5px');
-
-    dashCircle.transition().delay(3500).duration(400)
-        .attr('r',function (d, i) {
-            //return (d.transitTypes.totalCommute.timeUnder10 / d.transitTypes.totalCommute.totalCount) * 100;  //returns as percent, not scaled to match population size
-            //console.log(d.transitTypes.totalCommute.totalCount);
-            return scaleR(d.values[1].transitTypes.totalCommute.totalCount);
+            //console.log(transitMetadata[i].transitType);
+            //console.log(nestedCitiesName[9].values[1].transitTypes);
+            return 'translate('+((10*width/10)+45)+ ',' + scaleY(nestedCitiesName[9].values[1].transitTypes[transitMetadata[i].transitType].overallAverageTime - 1) + ')'})
+        .attr('font-size', '14px')
+        .style('fill', function(d,i){
+            return scalePieColor(i)
         });
 
-    cityCommuteCircles = cityPopCircles
-        .append('g')
-        .attr('class','city-commute-circles');
-    //.attr();  //translate to match scale for population circles!!
-
-    cityCircles = cityCommuteCircles.selectAll('.city-commute-circles')
-        .data(function(d,i){
-            var localCommuteIntervals = [];
-
-            for (j=0; j<timeMetadata.length; j++){
-                localCommuteIntervals.push(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
-                //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
-            }
-
-            return localCommuteIntervals;
-        })//nestedDataName gives me 10 circles, one for each city - not what I want here! Need 9 circles, one for each entry in the timeMetadata array
-        .enter()
-        .append('circle')
-        .attr('class','city-commute-circle')
-        .attr('cx',0)
-        .attr('cy',function (d, i) {
-            //console.log(nestedCitiesName[i].values[1].transitTypes.totalCommute.overallAverageTime)
-            return scaleY(nestedCitiesName[i].values[1].transitTypes.totalCommute.overallAverageTime);
-        })//function (d, i) {
-        //for(j=0; j<timeMetadata.length; j++) {
-        // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
-        //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
-        //}
-        //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
-        // return scaleY([timeMetadata[i].timeNumber]);
-        //})
-        .attr('r', 0)//function(d,i){return scaleR(d)})
-        .style('fill','red');
-
-    cityCircles.transition().delay(3500).duration(800)
-        .attr('cy',function (d, i) {
-            //for(j=0; j<timeMetadata.length; j++) {
-            // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
-            //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
-            //}
-            //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
-            return scaleY([timeMetadata[i].timeNumber]);
-        })
-        .attr('r',function(d,i){return scaleR(d)});
-
-
-    metroCommuteCircles = metroPopCircles
-        .append('g')
-        .attr('class','metro-commute-circles');
-
-    metroCircles = metroCommuteCircles.selectAll('.metro-commute-circles')
-        .data(function(d,i){
-            var localCommuteIntervals = [];
-
-            for (j=0; j<timeMetadata.length; j++){
-                localCommuteIntervals.push(d.values[0].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
-                //console.log(d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100);
-            }
-
-            return localCommuteIntervals;
-        })//nestedDataName gives me 10 circles, one for each city - not what I want here! Need 9 circles, one for each entry in the timeMetadata array
-        .enter()
-        .append('circle')
-        .attr('class','city-commute-circle')
-        .attr('cx',0)
-        .attr('cy',function (d, i) {
-            //for(j=0; j<timeMetadata.length; j++) {
-            // console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j].timeLabel]);
-            //console.log(d.values[1].transitTypes.totalCommute[timeMetadata[j]]);
-            //}
-            //d.transitTypes[transitMetadata[j].transitType].totalCount/d.transitTypes.totalCommute.totalCount*100
-            return scaleY([timeMetadata[i].timeNumber]);
-        })
-        .attr('r',0)
-        .style('fill','none')
-        .style('stroke', 'purple');
-
-    metroCircles.transition().delay(5000).duration(400)
-        .attr('r',function(d,i){return scaleR(d)});
-
 }
-
-
-
 
 
 function parse(csvData){
