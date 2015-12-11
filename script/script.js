@@ -108,9 +108,6 @@ queue()
 
 
 
-
-
-
 ////////////////////////////////
 
             //csvData is an array of 312 objects, each with geoid, name, and time values for each commute length interval in the dataset.
@@ -122,28 +119,77 @@ queue()
         //Listen for button click, load the correct function when called
             d3.selectAll('.btn').on('click', function () {
 
+                var tracker;
+
                 var mode = d3.select(this).attr('id');
                 console.log(mode);
                 if (mode == 'btn-1') {
+                    tracker = 1;
                     averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata,transitionTime, durationTime);
                 }
                 else if (mode == 'btn-2') {
-                    commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime, durationTime);
+                    if (tracker ==1 ){
+                        tracker = 2;
+                        commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime, durationTime);
+                    }
+                    else {
+                        tracker = 2;
+                        plot.selectAll("*").remove();
+                        averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata,30,.01);
+                        commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime, durationTime);
+                    }
+
                 }
 
                 else if (mode == 'btn-3') {
-                    metroCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime, durationTime);
+                    if (tracker == 2) {
+                        tracker = 3;
+                        metroCommuteBubbles(nestedCitiesName, timeMetadata, narrativeText, transitMetadata, transitionTime, durationTime);
+                    }
+                    else {
+                        tracker = 3;
+                        plot.selectAll("*").remove();
+                        averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata,30,.01);
+                        commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata,.1,.01);
+                        metroCommuteBubbles(nestedCitiesName, timeMetadata, narrativeText, transitMetadata, transitionTime, durationTime);
+                    }
                 }
 
                 else if (mode == 'btn-4') {
-                    commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime, durationTime);
+                    if (tracker ==3) {
+                        tracker = 4;
+                        commutePies(nestedCitiesName, timeMetadata, narrativeText, transitMetadata, transitionTime, durationTime);
+                    }
+                    else {
+                        tracker=4;
+                        plot.selectAll("*").remove();
+                        averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata,30,.01);
+                        commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata,.1,.01);
+                        metroCommuteBubbles(nestedCitiesName, timeMetadata, narrativeText, transitMetadata, .1,.01);
+                        commutePies(nestedCitiesName, timeMetadata, narrativeText, transitMetadata, transitionTime, durationTime);
+
+
+                    }
                 }
 
                 else if (mode == 'btn-5') {
-                    commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime, durationTime);
+                    if (tracker==4) {
+                        tracker = 5;
+                        commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime, durationTime);
+                    }
+                    else{
+                        tracker = 5;
+                        plot.selectAll("*").remove();
+                        averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata,30,.01);
+                        commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata,.1,.01);
+                        metroCommuteBubbles(nestedCitiesName, timeMetadata, narrativeText, transitMetadata, .1,.01);
+                        commutePies(nestedCitiesName, timeMetadata, narrativeText, transitMetadata,  .1,.01);
+                        commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime, durationTime);
+                    }
                 }
 
                 else {
+                    tracker = 0;
                     console.log('broken');
                 }
             })
@@ -154,7 +200,9 @@ queue()
 //function dataLoaded(err,geoData,pieData){
 //}
 
+
 function averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime, durationTime){
+
 
     //clear the screen
     plot.selectAll("*").remove();
@@ -177,15 +225,14 @@ function averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, tran
         .attr('font-size', '18px')
         .style('fill', 'rgb(200,200,200');
 
-
     //create 10 groups bound to the city names
     var popCircles = plot.selectAll('.city-metro-groups')
         .data(nestedCitiesName)
         .enter()
         .append('g')
         .attr('class', 'city-metro-group')
-        .attr('transform', function(d,i){
-            return 'translate('+ ((i * width / 10.5) + width / 10.5) + ',' + 0 + ')'
+        .attr('transform', function (d, i) {
+            return 'translate(' + ((i * width / 10.5) + width / 10.5) + ',' + 0 + ')'
         });
 
     //Create groups to put city-specific and metro-specific data in
@@ -201,6 +248,8 @@ function averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, tran
     cityPopCircles.selectAll('city-population-circles')
         .data(nestedCitiesName) //duplicated DC city data for metro - otherwise, returns an error b/c only one array element!
         .enter();
+
+
 
     //add a label for each city, display in the center of the screen
     cityLabels = cityPopCircles.append('text')
@@ -400,6 +449,7 @@ function commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText,
 }
 
 function metroCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata, transitionTime, durationTime){
+
     metroCommuteCircles = metroPopCircles
         .append('g')
         .attr('class','metro-commute-circles');
@@ -440,7 +490,10 @@ function metroCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, transi
         .text(function(d,i){
             return (narrativeText[5])
         })
-        .style('fill', 'rgb(175,221,233)');
+        .style('fill', 'rgb(175,221,233)')
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+width/2+ ',' + scaleY(75) + ')'});
 
     //commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime, durationTime)
 }
@@ -667,7 +720,7 @@ function  commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadat
 
 function commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime, durationTime) {
 
-    var cityTransitTypes = plot.selectAll('.city-transit-types');
+     var cityTransitTypes = plot.selectAll('.city-transit-types');
 
     cityTransitBars = cityTransitTypes
         .append('g')
@@ -724,14 +777,16 @@ function commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata
              return 'translate('+((10.5*width/10.5))+ ',' + scaleY(nestedCitiesName[9].values[1].transitTypes[transitMetadata[i].transitType].overallAverageTime - 1) + ')'
         });
 
-
     var narration = plot.selectAll('.narrate-text');
 
     narration.transition().delay(.1*transitionTime).duration(.4*durationTime)
         .text(function(d,i){
             return (narrativeText[7])
         })
-        .style('fill', 'rgb(200,200,200)');
+        .style('fill', 'rgb(200,200,200)')
+        .attr('transform',function(d,i){
+            //console.log(timeMetadata[i].timeNumber);
+            return 'translate('+width/2+ ',' + scaleY(75) + ')'});
 
 
     //a pointless transition on an already-hidden item - this is used only to make sure that reducing the transition time doesn't cut off the duration times for the last few animations
@@ -807,7 +862,7 @@ function commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata
 
 
 
-
+/*
 
 
 
@@ -1236,7 +1291,7 @@ function multiplePies(nestedCitiesName, transitMetadata, timeMetadata) {
         });
 
 }
-
+*/
 
 function parse(csvData){
 //Parse function is called from the d3.csv command - pieData is the output from the csv file, /not/ the geoJSON data!!!
