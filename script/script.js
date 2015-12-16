@@ -8,7 +8,8 @@ var width = document.getElementById('plot').clientWidth - margin.r - margin.l,
 var scalePieColor = d3.scale.ordinal().domain([0,1,2,3,4,5,6,7]).range(['orangered','orange','darkcyan','darkviolet','lawngreen','darkgreen','peru','sienna','tan']); //ordinal scale does 1:1 lookup
 var scaleX = d3.scale.linear().domain([0,150]).range([0,width]),
     scaleY = d3.scale.linear().domain([0,90]).range([height, 0]),
-    scaleR = d3.scale.sqrt().range([0, .02]);  //set values based on sizes that I wanted to obtain - seems awfully small?
+    scaleR = d3.scale.sqrt().range([0, .02]),  //set values based on sizes that I wanted to obtain - seems awfully small?
+    scaleW = d3.scale.linear().domain([0,2.75]).range([0,width/5]);  //set scale for width of commuteBars
 
 //draw plot, create svg canvas, translate as necessary to fit screen
 var plot = d3.select('#plot')
@@ -74,7 +75,7 @@ queue()
             'City population',
             'Average commute time',
             'Number of commuters',
-            'Distribution of commute times',
+            'Number of commuters in each time bin',
             'Metro area commuters',
             'Transit types used',
             'Average time by transit type'
@@ -159,7 +160,7 @@ queue()
                         commuteDistributionBubbles(nestedCitiesName,timeMetadata,narrativeText, transitMetadata,.1,.01);
                         metroCommuteBubbles(nestedCitiesName, timeMetadata, narrativeText, transitMetadata, .1,.01);
                         commutePies(nestedCitiesName, timeMetadata, narrativeText, transitMetadata,  .1,.01);
-                        commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime, durationTime);
+                        commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime, durationTime, pieCharts);
                     }
                 }
 
@@ -280,6 +281,8 @@ function averageCommuteBubbles(nestedCitiesName,timeMetadata,narrativeText, tran
         .attr('y2', function (d, i) {
             return scaleY(d.values[1].transitTypes.totalCommute.overallAverageTime)
         });
+    //The line weight/color seems to be inconsistent in the drawing, but the CSS style is never contradicted in the script. Not
+    //sure why there should be a difference?
 
     //draw the average line
     averageLine.transition().delay(5.5*transitionTime).duration(1.5*durationTime)
@@ -496,12 +499,13 @@ function  commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadat
         });
 
     //Grab the metro circles left on the svg canvas from the last function, shrink their radius to zero
-    //(Could probably also use a .exit command here - don't really need them again. Was having difficulty
-    //with .enter, .remove commands for selections grabbed from the DOM in this way; works ok in same function
-    // as the bind, but passing across functions was buggy)
     metroBubbles = plot.selectAll('.metro-commute-circle');
     metroBubbles.transition().delay(0*transitionTime)
         .attr('r',0);
+
+
+    //clean up the DOM by removing unused elements
+    metroBubbles.remove(); //metroBubbles.exit is not a function (because not bound here?)
 
     //Similarly, grab commute circles, translate them to the appropriate average commute time, and shrink radius
     commuteBubbles = plot.selectAll('.city-commute-circle');
@@ -545,20 +549,22 @@ function  commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadat
             }
         });
 
-    commuteBubbles.transition().delay(1.5*transitionTime).attr('r',0);
+    commuteBubbles.transition().delay(1.5*transitionTime).attr('r',0).remove();
 
     //Grab population circle, dashed lines, and translated commute circles, and set radii to zero.
-    //I think I should be able to combine these transitions by selecting multiple classes at once (assign is ('class', 'class1 class2') - Wk 7 Ex3,
-    //but that didn't work here.
+    //I think I should be able to combine these transitions by selecting multiple classes at once
+    //(assigning multiple classes is ('class', 'class1 class2') - Wk 7 Ex3, but calling more than one didn't work here.
     popBubbles = plot.selectAll('.city-population-circle');
 
     popBubbles.transition().delay(1.5*transitionTime).duration(.5*durationTime)
-        .attr('r',0);
+        .attr('r',0)
+        .remove();
 
     commuterPopBubbles = plot.selectAll('.city-commuter-pop');
 
     commuterPopBubbles.transition().delay(1.5*transitionTime).duration(.5*durationTime)
-        .attr('r',0);
+        .attr('r',0)
+        .remove();
 
     //update pie charts using the arc generator function - grow in where the population circles were
     //(Would be nice if this were smoother...)
@@ -578,7 +584,6 @@ function  commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadat
             return (narrativeText[6])
         })
         .style('fill', 'darkcyan');
-
 
     //set label text for different transit types
     var transitLabelText = ['Bus', 'Carpool', 'Drove alone', 'Rail or Ferry', 'Streetcar', 'Taxi', 'Walked'];
@@ -610,7 +615,14 @@ function  commutePies(nestedCitiesName,timeMetadata,narrativeText,transitMetadat
 }
 
 //this function adds colored bars to represent the average commute times for each form of transit used in each city
-function commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime, durationTime) {
+function commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata, transitionTime, durationTime, pieCharts) {
+
+    //Re-define the arc generator function for the pie chart, for exit animation
+    var beginArcGenerator = d3.svg.arc()
+        //.startAngle()  //already stored in data w/ correct name by pieLayout function.
+        //.endAngle()
+        .innerRadius(0)
+        .outerRadius(0);
 
     //grab DOM elements in a selection
      var cityTransitTypes = plot.selectAll('.city-transit-types');
@@ -628,7 +640,11 @@ function commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata
 
             //as for the pie charts above, extract the appropriate data to a temporary array
             for (j=0; j<transitMetadata.length; j++){
-                localtransitTimes.push({overallAverage:d.values[1].transitTypes.totalCommute.overallAverageTime, transitAverages:d.values[1].transitTypes[transitMetadata[j].transitType].overallAverageTime});
+                localtransitTimes.push({overallAverage:d.values[1].transitTypes.totalCommute.overallAverageTime,
+                    transitAverages:d.values[1].transitTypes[transitMetadata[j].transitType].overallAverageTime,
+                    overallCount:d.values[1].transitTypes.totalCommute.totalCount,
+                    transitCount:d.values[1].transitTypes[transitMetadata[j].transitType].totalCount
+                });
             }
             //return the temporary array for data binding
             return localtransitTimes;
@@ -649,8 +665,24 @@ function commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata
 
     //use a transition to allow the bars to grow in
     transitBars.transition().delay(.1*transitionTime).duration(.7*durationTime)
-        .attr('x',-40)
-        .attr('width', 80);
+        .attr('x',function(d,i){
+            console.log(scaleW(d.transitCount/ d.overallCount));
+            return -scaleW(d.transitCount/ d.overallCount)})
+        .attr('width', function(d,i){
+            return 2*scaleW(d.transitCount/ d.overallCount)
+        });
+
+    //pieCharts = plot.selectAll('.transit-pie-chart');
+
+    //This doesn't appear to be a smooth transition - removes pie charts abruptly.
+    //Would prefer to make it smoother by accessing the radius, but this doesn't seem to work for pielayouts
+    pieCharts.transition().delay(.1*transitionTime).duration(10*durationTime)
+        .attr('d', beginArcGenerator)
+        .remove();
+
+    //update the average line to fit the pie charts (previously scaled to the size of the population circles)
+    averageLine = plot.selectAll('.average-line');
+    averageLine.style('stroke-dasharray','5px 5px');
 
     //and move them to the appropriate time average for each transit type
     transitBars.transition().delay(.85*transitionTime).duration(.75*durationTime)
@@ -680,7 +712,9 @@ function commuteBars(nestedCitiesName,timeMetadata,narrativeText,transitMetadata
             return 'translate('+width/2+ ',' + scaleY(75) + ')'});
 
 
-    //add a pointless transition on an already-hidden item - to make sure that reducing the transition time doesn't cut off the animation for the last few animations
+    //add a pointless transition on an already-hidden item - to make sure that reducing the transition time doesn't cut off the animation for the
+    //last few animations (not sure that this is still a problem in this version of the code, but I was having problems with the function terminating
+    //after the final transition time. If the final transition had a non-zero duration, this caused problems.
     var endTimer = plot.selectAll('.city-population-circle');
 
     endTimer.transition().delay(30*transitionTime).duration(1000)
