@@ -1,0 +1,20 @@
+geoid,label,type
+16000US0644000,Los Angeles,1
+16000US2404000,Baltimore,1
+16000US2507000,Boston,1
+16000US1714000,Chicago,1
+16000US2622000,Detroit,1
+04000US11,District of Columbia,1
+16000US3651000,New York,1
+16000US4260000,Philadelphia,1
+16000US0668000,San Jose,1
+31000US12580,Baltimore Metro,2
+31000US14460,Boston Metro,2
+31000US16980,Chicago Metro,2
+31000US19820,Detroit Metro,2
+31000US31080,Los Angeles Metro,2
+31000US35620,New York Metro,2
+31000US37980,Philadelphia Metro,2
+31000US41860,San Francisco Metro,2
+16000US0667000,San Francisco,1
+31000US41940,San Jose Metro,2

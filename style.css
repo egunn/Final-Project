@@ -1,0 +1,81 @@
+html,body,div,ul,li,svg{
+	margin:0;
+	padding:0;
+	list-style:none;
+}
+
+/*------------Global-------------*/
+html,body{
+	height: 100%;
+	position: relative;
+	background: rgb(242,244,233);
+}
+
+.container{
+    height:100%;
+}
+.container .section{
+	width:100%;
+}
+.container .canvas{
+	width:100%;
+	background:white;
+	height:600px;
+}
+.container .controls{
+	margin-bottom:10px;
+}
+
+/*------------font-------------*/
+body{
+	font-size: 16px;
+}
+h1{ font-size:1.7em;}
+h2{ font-size:1em;}
+p{
+	font-family:"Droid Serif", serif;
+}
+
+/*------------svg--------------*/
+.axis{
+    fill:none;
+    stroke:rgb(80,80,80);
+    stroke-width:.5px;
+    //stroke-dasharray:3px 3px;
+}
+
+/*svg text{
+    font-size:9px;
+}*/
+.activity-2 path,
+.activity-2 text{
+    fill-opacity:.8;
+}
+.activity-2:hover path{
+    fill-opacity:1;
+}
+.activity-2:hover text{
+    fill-opacity:1;
+}
+.city-population-circle{
+		fill:rgb(95,188,211)
+}
+.average-line{
+	stroke:rgb(11,34,40);
+	stroke-width:1px;
+}
+.city-commuter-pop{
+	fill:none;
+	stroke:rgb(38,122,142);
+	stroke-width:2px;
+	stroke-dasharray:5px 5px;
+}
+
+.city-commute-circle{
+	fill:rgb(38,122,142);
+}
+
+.metro-commute-circles{
+	fill:none;
+	stroke:rgb(175,221,233);
+}

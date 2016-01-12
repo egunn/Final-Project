@@ -1,0 +1,68 @@
+{
+    "release": {
+        "id": "acs2013_5yr",
+        "name": "ACS 2013 5-year",
+        "years": "2009-2013"
+    },
+    "tables": {
+        "B08303": {
+            "title": "Travel Time to Work",
+            "universe": "Workers 16 Years and Over Who Did Not Work at Home",
+            "denominator_column_id": "B08303001",
+            "columns": {
+                "B08303001": {
+                    "name": "Total:",
+                    "indent": 0
+                },
+                "B08303002": {
+                    "name": "Less than 5 minutes",
+                    "indent": 1
+                },
+                "B08303003": {
+                    "name": "5 to 9 minutes",
+                    "indent": 1
+                },
+                "B08303004": {
+                    "name": "10 to 14 minutes",
+                    "indent": 1
+                },
+                "B08303005": {
+                    "name": "15 to 19 minutes",
+                    "indent": 1
+                },
+                "B08303006": {
+                    "name": "20 to 24 minutes",
+                    "indent": 1
+                },
+                "B08303007": {
+                    "name": "25 to 29 minutes",
+                    "indent": 1
+                },
+                "B08303008": {
+                    "name": "30 to 34 minutes",
+                    "indent": 1
+                },
+                "B08303009": {
+                    "name": "35 to 39 minutes",
+                    "indent": 1
+                },
+                "B08303010": {
+                    "name": "40 to 44 minutes",
+                    "indent": 1
+                },
+                "B08303011": {
+                    "name": "45 to 59 minutes",
+                    "indent": 1
+                },
+                "B08303012": {
+                    "name": "60 to 89 minutes",
+                    "indent": 1
+                },
+                "B08303013": {
+                    "name": "90 or more minutes",
+                    "indent": 1
+                }
+            }
+        }
+    }
+}
